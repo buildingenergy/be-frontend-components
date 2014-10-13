@@ -49,7 +49,6 @@
 						var popup = L.popup({closeButton: false}).setContent(building.name);
 						marker.bindPopup(popup);
 						marker.building = building;
-						building.marker = marker;
 						buildingLayer.addLayer(marker);
 
 						(function(i, building, marker) {
