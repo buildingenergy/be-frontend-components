@@ -2,7 +2,7 @@
 // must set mapbox accessToken
 L.mapbox.accessToken = 'pk.eyJ1IjoiYnVpbGRpbmdlbmVyZ3kiLCJhIjoiVTktdUY4OCJ9.w0n83ar92Qf0n6RvQaZHrA';
 
-angular.module('BE.widgets.buildingsMap')
+angular.module('BE.frontend.examples.mapExample', ['BE.frontend.buildingsMap'])
 	.controller('BuildingsMap', ['$scope', function($scope) {
 		var test_buildings = [];
 		var seattle = {
