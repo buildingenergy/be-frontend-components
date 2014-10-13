@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Mapbox Building List Demo</title>
+
+	<meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+	
+	<link href='../bower_components/mapbox.js/mapbox.css' rel='stylesheet' />
+	
+	<script src="../bower_components/lodash/dist/lodash.js"></script>
+	<script src="../bower_components/angular/angular.js"></script>
+	<script src="../bower_components/mapbox.js/mapbox.js"></script>
+
+	<style>
+		.mapbox-map-fullscreen { 
+			position: absolute; 
+			top: 0; 
+			bottom: 0; 
+			width: 75%; 
+		}
+		.buildings-list {
+			position: absolute;
+			top: 0;
+			left: 75%;
+			width: 25%;
+			height: 100%;
+			background: #fff;
+			padding: 30px;
+		}
+	</style>
+</head>
+<body ng-app="BE.widgets.buildingsMap">
+	<div ng-controller="BuildingsMap">
+		<div buildings-map id="map-1" class="mapbox-map-fullscreen" mapbox-id="buildingenergy.jnoc4oco" buildings='buildings'></div>
+		<div buildings-list class="buildings-list">
+			<table class="table table-striped">
+				<thead>
+					
+				</thead>
+				<tbody ng-repeat="building in buildings">
+					<tr>
+						<td><input type="checkbox" ng-model="building.checked"/></td>
+						<td>{{ building.name }}</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+
+	<!-- -------------------- -->
+
+	<script type="text/javascript" src="../directives/buildingsMap.js"></script>
+	<script type="text/javascript" src="js/main.js"></script>
+</body>
+</html>
