@@ -27,7 +27,8 @@ angular.module('BE.widgets.buildingsMap', [])
 			link: function(scope, element, attrs) {
 				var div = element[0];
 				var map = L.mapbox.map(div, scope.mapboxId);
-				var buildingLayer = L.featureGroup().addTo(map);
+				var visibleBuildingLayer = L.featureGroup().addTo(map);
+				var buildingLayer = L.featureGroup();
 				var icon = L.mapbox.marker.icon({
 					'marker-size': 'small',
 					'marker-color': '#AA60D6',
@@ -47,11 +48,16 @@ angular.module('BE.widgets.buildingsMap', [])
 					marker.bindPopup(popup);
 					marker.building = building;
 					building.marker = marker;
+					buildingLayer.addLayer(marker);
 
 					(function(i, building, marker) {
 						scope.$watch('buildings['+i+'].checked', function(checked) {
-							checked ? buildingLayer.addLayer(marker) : buildingLayer.removeLayer(marker);
-							setBounds(map, buildingLayer)
+							checked ? visibleBuildingLayer.addLayer(marker) : visibleBuildingLayer.removeLayer(marker);
+							if(visibleBuildingLayer.getLayers().length > 0) {
+								setBounds(map, visibleBuildingLayer);
+							} else {
+								setBounds(map, buildingLayer);
+							}
 						});
 					})(i, building, marker);
 				}

@@ -27,7 +27,7 @@ angular.module('BE.widgets.buildingsMap')
 			test_buildings.push({
 				name: 'Building ' + b,
 				latlng: randLatLng(),
-				checked: Math.random() < 0.1,
+				checked: false,//Math.random() < 0.1,
 			});
 		}
 		$scope.buildings = test_buildings;
