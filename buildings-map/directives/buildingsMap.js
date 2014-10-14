@@ -23,44 +23,84 @@
 			return {
 				restrict: 'A',
 				scope: {
-					'buildings': '=',
-					'mapboxId': '@',
+					buildings: '=',
+					mapboxId: '@',
+					get_config: '&config',
 				},
 				link: function(scope, element, attrs) {
 					var div = element[0];
 					var map = L.mapbox.map(div, scope.mapboxId);
-					var visibleBuildingLayer = L.featureGroup().addTo(map);
-					var buildingLayer = L.featureGroup();
-					var icon = L.mapbox.marker.icon({
-						'marker-size': 'small',
-						'marker-color': '#AA60D6',
+					var visibleBuildingLayer = L.featureGroup();
+					var buildingLayer = L.featureGroup().addTo(map);
+
+					var config = _.defaults(scope.get_config(), {
+						mapVisibleProperty: 'mapVisible',
+						onViewportChange: function() {},
+						markerIcon: L.mapbox.marker.icon({
+							'marker-size': 'small',
+							'marker-color': '#AA60D6',
+						}),
 					});
-					var setBounds = _.debounce( function(map, layer) {
+
+					scope.setMapBounds = _.debounce( function(map, layer) {
 						if(layer.getLayers().length > 0) {
 							var bounds = layer.getBounds();
 							map.fitBounds(bounds, {padding: [20, 20]});
 						}
 					}, 300);
 
-					for (var i in scope.buildings) {
-						var building = scope.buildings[i];
-						var latlng = building.latlng || randLatLng();  // TODO: Remove this!
-						var marker = L.marker(latlng, {icon: icon});
-						var popup = L.popup({closeButton: false}).setContent(building.name);
-						marker.bindPopup(popup);
-						marker.building = building;
-						buildingLayer.addLayer(marker);
+					scope.$watch('buildings', function() {
+						scope.updateBuildings();
+					})
 
-						(function(i, building, marker) {
-							scope.$watch('buildings['+i+'].checked', function(checked) {
-								checked ? visibleBuildingLayer.addLayer(marker) : visibleBuildingLayer.removeLayer(marker);
-								if(visibleBuildingLayer.getLayers().length > 0) {
-									setBounds(map, visibleBuildingLayer);
-								} else {
-									setBounds(map, buildingLayer);
+					scope.updateBuildings = function() {
+						buildingLayer.clearLayers();
+
+						for (var i in scope.buildings) {
+							var building = scope.buildings[i];
+							var latlng = building.latitude_longitude = building.latitude_longitude || randLatLng();  // TODO: Remove this!
+							var marker = L.marker(latlng, {
+								icon: config.markerIcon,
+							});
+							// var popup = L.popup({
+							// 	closeButton: false
+							// }).setContent(building.name);
+							// marker.bindPopup(popup);
+							marker.building = building;
+
+							buildingLayer.addLayer(marker);
+
+							building[config.mapVisibleProperty] = true;
+							building.marker = marker;
+
+							(function(i, building, marker) {
+								// NOTE: this change doesn't stick after paginating and coming back to these results.
+								// marker.on('click', function(e) {
+								// 	var building = this.building;
+								// 	scope.$apply(function() { building.checked = !building.checked; });
+								// });
+								scope.$watch('buildings['+i+'].checked', function() {
+									config.onBuildingCheckedChange(building, i);
+								});
+							})(i, building, marker);
+						}
+
+						map.on('moveend resize zoomend', function(e) {
+							scope.$apply( function(scope) {
+								var bounds = map.getBounds();
+								for(var i in scope.buildings) {
+									var building = scope.buildings[i];
+									if(bounds.contains(L.latLng(building.latitude_longitude))) {
+										building[config.mapVisibleProperty] = true;
+									} else {
+										building[config.mapVisibleProperty] = false;
+									}
+									config.onViewportChange(map, building, i);
 								}
 							});
-						})(i, building, marker);
+						});
+
+						scope.setMapBounds(map, buildingLayer);
 					}
 				},
 			}
