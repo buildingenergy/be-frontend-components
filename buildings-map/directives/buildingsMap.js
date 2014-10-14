@@ -58,7 +58,7 @@
 
 						for (var i in scope.buildings) {
 							var building = scope.buildings[i];
-							var latlng = building.latitude_longitude = building.latitude_longitude || randLatLng();  // TODO: Remove this!
+							var latlng = building.latitude_longitude = randLatLng();  // TODO: Remove this!
 							var marker = L.marker(latlng, {
 								icon: config.markerIcon,
 							});
