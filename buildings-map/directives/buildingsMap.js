@@ -51,7 +51,7 @@
 
 					scope.$watch('buildings', function() {
 						scope.updateBuildings();
-					})
+					});
 
 					scope.updateBuildings = function() {
 						buildingLayer.clearLayers();
