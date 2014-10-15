@@ -30,8 +30,8 @@
 				link: function(scope, element, attrs) {
 					var div = element[0];
 					var map = L.mapbox.map(div, scope.mapboxId);
-					var visibleBuildingLayer = L.featureGroup();
-					var buildingLayer = L.featureGroup().addTo(map);
+					var buildingLayer = new L.MarkerClusterGroup();
+					map.addLayer(buildingLayer);
 
 					var config = _.defaults(scope.get_config(), {
 						mapVisibleProperty: 'mapVisible',
