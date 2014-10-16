@@ -45,7 +45,12 @@
 				link: function(scope, element, attrs) {
 					var div = element[0];
 					var map = L.mapbox.map(div, scope.mapboxId);
-					var buildingLayer = new L.MarkerClusterGroup();
+					var buildingLayer = new L.MarkerClusterGroup({
+						spiderfyDistanceMultiplier: 2,
+						maxClusterRadius: function(zoom) {
+							return Math.max(10, 44 - 1*Math.pow(zoom, 1.33));
+						},
+					});
 					map.addLayer(buildingLayer);
 
 					var config = _.defaults(scope.get_config(), {
