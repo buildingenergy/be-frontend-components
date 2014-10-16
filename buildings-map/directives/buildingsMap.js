@@ -1,5 +1,20 @@
 (function(angular) {
 
+	function formatLatLng(latlng) {
+		if(!latlng) {
+			return null;
+		} else if(latlng.lat && latlng.lng) {
+			return latlng;
+		} else if(latlng.length == 2) {
+			return {
+				lat: latlng[0],
+				lng: latlng[1],
+			}
+		} else {
+			return null;
+		}
+	}
+
 	angular.module('BE.frontend.buildingsMap', [])
 		.directive('buildingsMap', function() {
 
@@ -58,7 +73,15 @@
 
 						for (var i in scope.buildings) {
 							var building = scope.buildings[i];
-							var latlng = building.latitude_longitude = randLatLng();  // TODO: Remove this!
+							var latlng = building.latlng = {
+								lat: building.latitude, 
+								lng: building.longitude,
+							}
+
+							if(!latlng || !latlng.lat || !latlng.lng) {
+								latlng = building.latlng = randLatLng();
+							}
+
 							var marker = L.marker(latlng, {
 								icon: config.markerIcon,
 							});
@@ -90,7 +113,7 @@
 								var bounds = map.getBounds();
 								for(var i in scope.buildings) {
 									var building = scope.buildings[i];
-									if(bounds.contains(L.latLng(building.latitude_longitude))) {
+									if(bounds.contains(L.latLng(building.latlng))) {
 										building[config.mapVisibleProperty] = true;
 									} else {
 										building[config.mapVisibleProperty] = false;
