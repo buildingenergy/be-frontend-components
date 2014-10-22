@@ -24,9 +24,9 @@
 					lat: 47.60060732292067,
 					lng: -122.32589721679688,
 				}
-				function gaussian() { 
+				function gaussian() {
 					var r = Math.random;
-					return (r() + r() + r() + r() - 2) / 2; 
+					return (r() + r() + r() + r() - 2) / 2;
 				}
 				return {lat: seattle.lat + gaussian()/4, lng: seattle.lng + gaussian()/3};
 			}
@@ -52,9 +52,9 @@
 						},
 					});
 					map.addLayer(buildingLayer);
-					for(i in _.range(1,300)) {
-						scope.buildings.push({});
-					}
+					// for(i in _.range(1,10000)) {
+					// 	scope.buildings.push({thin: true});
+					// }
 
 					var config = _.defaults(scope.get_config(), {
 						mapVisibleProperty: 'mapVisible',
@@ -82,7 +82,7 @@
 						for (var i in scope.buildings) {
 							var building = scope.buildings[i];
 							var latlng = building.latlng = {
-								lat: building.latitude, 
+								lat: building.latitude,
 								lng: building.longitude,
 							}
 
@@ -101,35 +101,35 @@
 
 							buildingLayer.addLayer(marker);
 
-							building[config.mapVisibleProperty] = true;
+							building[config.mapVisibleProperty] = !building.thin;
 							building.marker = marker;
 
-							// (function(i, building, marker) {
-							// 	// NOTE: this change doesn't stick after paginating and coming back to these results.
-							// 	// marker.on('click', function(e) {
-							// 	// 	var building = this.building;
-							// 	// 	scope.$apply(function() { building.checked = !building.checked; });
-							// 	// });
-							// 	scope.$watch('buildings['+i+'].checked', function() {
-							// 		config.onBuildingCheckedChange(building, i);
-							// 	});
-							// })(i, building, marker);
+							(function(i, building, marker) {
+								// NOTE: this change doesn't stick after paginating and coming back to these results.
+								// marker.on('click', function(e) {
+								// 	var building = this.building;
+								// 	scope.$apply(function() { building.checked = !building.checked; });
+								// });
+								scope.$watch('buildings['+i+'].checked', function() {
+									config.onBuildingCheckedChange(building, i);
+								});
+							})(i, building, marker);
 						}
 
-						// map.on('moveend resize zoomend', function(e) {
-						// 	scope.$apply( function(scope) {
-						// 		var bounds = map.getBounds();
-						// 		for(var i in scope.buildings) {
-						// 			var building = scope.buildings[i];
-						// 			if(bounds.contains(L.latLng(building.latlng))) {
-						// 				building[config.mapVisibleProperty] = true;
-						// 			} else {
-						// 				building[config.mapVisibleProperty] = false;
-						// 			}
-						// 			config.onViewportChange(map, building, i);
-						// 		}
-						// 	});
-						// });
+						map.on('moveend resize zoomend', function(e) {
+							scope.$apply( function(scope) {
+								var bounds = map.getBounds();
+								for(var i in scope.buildings) {
+									var building = scope.buildings[i];
+									if(bounds.contains(L.latLng(building.latlng))) {
+										building[config.mapVisibleProperty] = true;
+									} else {
+										building[config.mapVisibleProperty] = false;
+									}
+									config.onViewportChange(map, building, i);
+								}
+							});
+						});
 
 						scope.setMapBounds(map, buildingLayer);
 					}
