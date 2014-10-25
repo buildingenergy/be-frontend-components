@@ -1,139 +1,170 @@
 (function(angular) {
 
-	function formatLatLng(latlng) {
-		if(!latlng) {
-			return null;
-		} else if(latlng.lat && latlng.lng) {
-			return latlng;
-		} else if(latlng.length == 2) {
-			return {
-				lat: latlng[0],
-				lng: latlng[1],
-			}
-		} else {
-			return null;
-		}
-	}
-
 	angular.module('BE.frontend.buildingsMap', [])
-		.directive('buildingsMap', function() {
+		.directive('buildingsMap', [
+			'search_service',
+			function(search) {
 
-			function randLatLng() {
-				console.warn("WARNING: Using random lat/lng!!");
-				var seattle = {
-					lat: 47.60060732292067,
-					lng: -122.32589721679688,
-				}
-				function gaussian() {
-					var r = Math.random;
-					return (r() + r() + r() + r() - 2) / 2;
-				}
-				return {lat: seattle.lat + gaussian()/4, lng: seattle.lng + gaussian()/3};
-			}
-
-			if(!L.mapbox.accessToken) {
-				console.error("Must supply L.mapbox.accessToken");
-			}
-
-			return {
-				restrict: 'A',
-				scope: {
-					buildings: '=buildings',
-					mapboxId: '@',
-					get_config: '&config',
-				},
-				link: function(scope, element, attrs) {
-					var div = element[0];
-					var map = L.mapbox.map(div, scope.mapboxId);
-					var buildingLayer = new L.MarkerClusterGroup({
-						spiderfyDistanceMultiplier: 2,
-						maxClusterRadius: function(zoom) {
-							return Math.max(10, 64 - 1*Math.pow(zoom, 1.11));
-						},
-					});
-					map.addLayer(buildingLayer);
-					// for(i in _.range(1,10000)) {
-					// 	scope.buildings.push({thin: true});
-					// }
-
-					var config = _.defaults(scope.get_config(), {
-						mapVisibleProperty: 'mapVisible',
-						onViewportChange: function() {},
-						markerIcon: L.mapbox.marker.icon({
-							'marker-size': 'small',
-							'marker-color': '#AA60D6',
-						}),
-					});
-
-					scope.setMapBounds = _.debounce( function(map, layer) {
-						if(layer.getLayers().length > 0) {
-							var bounds = layer.getBounds();
-							map.fitBounds(bounds, {padding: [20, 20]});
+				return {
+					restrict: 'A',
+					scope: {
+						buildings: '=buildings',
+						sites: '=buildingSites',
+						mapboxId: '@',
+						getConfig: '&config',
+					},
+					link: function(scope, element, attrs) {
+						if(!L.mapbox.accessToken) {
+							console.error("Must supply L.mapbox.accessToken");
 						}
-					}, 300);
+						var div = element[0];
+						var map = L.mapbox.map(div, scope.mapboxId);
+						var siteLayer = new L.MarkerClusterGroup({
+							spiderfyDistanceMultiplier: 2,
+							maxClusterRadius: function(zoom) {
+								return Math.max(10, 64 - 1*Math.pow(zoom, 1.11));
+							},
+						});
+						map.addLayer(siteLayer);
 
-					scope.$watch('buildings', function() {
-						scope.updateBuildings();
-					});
-
-					scope.updateBuildings = function() {
-						buildingLayer.clearLayers();
-
-						for (var i in scope.buildings) {
-							var building = scope.buildings[i];
-							var latlng = building.latlng = {
-								lat: building.latitude,
-								lng: building.longitude,
-							}
-
-							if(!latlng || !latlng.lat || !latlng.lng) {
-								latlng = building.latlng = randLatLng();
-							}
-
-							var marker = L.marker(latlng, {
-								icon: config.markerIcon,
-							});
-							// var popup = L.popup({
-							// 	closeButton: false
-							// }).setContent(building.name);
-							// marker.bindPopup(popup);
-							marker.building = building;
-
-							buildingLayer.addLayer(marker);
-
-							building[config.mapVisibleProperty] = !building.thin;
-							building.marker = marker;
-
-							(function(i, building, marker) {
-								// NOTE: this change doesn't stick after paginating and coming back to these results.
-								// marker.on('click', function(e) {
-								// 	var building = this.building;
-								// 	scope.$apply(function() { building.checked = !building.checked; });
-								// });
-								scope.$watch('buildings['+i+'].checked', function() {
-									config.onBuildingCheckedChange(building, i);
-								});
-							})(i, building, marker);
-						}
-
-						map.on('moveend resize zoomend', function(e) {
-							scope.$apply( function(scope) {
-								var bounds = map.getBounds();
-								for(var i in scope.buildings) {
-									var building = scope.buildings[i];
-									if(bounds.contains(L.latLng(building.latlng))) {
-										building[config.mapVisibleProperty] = true;
-									} else {
-										building[config.mapVisibleProperty] = false;
-									}
-									config.onViewportChange(map, building, i);
-								}
-							});
+						var config = _.defaults(scope.getConfig(), {
+							mapVisibleProperty: 'mapVisible',
+							markerIcon: L.mapbox.marker.icon({
+								'marker-size': 'small',
+								'marker-color': '#AA60D6',
+							}),
+							onViewportChange: function() {},
+							onSiteClick: function(building) {},
 						});
 
-						scope.setMapBounds(map, buildingLayer);
-					}
-				},
-			}
-		});
+						scope.setMapBounds = _.debounce( function(map, layer) {
+							if(layer.getLayers().length > 0) {
+								var bounds = layer.getBounds();
+								map.fitBounds(bounds, {padding: [20, 20]});
+							}
+						}, 300);
+
+						scope.getSite = function(building) {
+							return this.sites[this._siteIndices[building.canonical_building]];
+						}
+
+						scope.getBuilding = function(site) {
+							return this.buildings[this._buildingIndices[site.canonical_building_id]];
+						}
+
+						scope._buildingIndices = {};
+						scope._siteIndices = {};
+
+
+						scope.loadBuilding = function(i, building, site) {
+							this._buildingIndices[building.canonical_building] = i;
+						}
+
+						scope.initBuilding = function(i, building, site) {
+							building[config.mapVisibleProperty] = true;
+							var popup = L.popup({
+								offset: L.point(0, 0),
+							}).setContent(building.address_line_1);
+							if(site) {
+								building.site = site;
+								site.marker.bindPopup(popup);
+								scope.$watch('buildings['+i+'].checked', function() {
+									config.onBuildingCheckedChange(building, site);
+								});
+							}
+						}
+
+						scope.loadSite = function(i, site) {
+							this._siteIndices[site.canonical_building_id] = i;
+						}
+
+						scope.$watch('buildings', function() {
+							scope.updateBuildings();
+						});
+
+						scope.setMapBounds(map, siteLayer);
+
+						scope.updateBuildings = function() {
+							siteLayer.clearLayers();
+
+							for (var i in scope.buildings) {
+								var building = scope.buildings[i];
+								this.loadBuilding(i, building);
+							}
+
+							for (var i in scope.sites) {
+								var site = scope.sites[i];
+
+								if(!site.latitude) {
+									continue;
+								}
+
+								this.loadSite(i, site);
+
+								var latlng = site.latlng = {
+									lat: parseFloat(site.latitude),
+									lng: parseFloat(site.longitude),
+								}
+
+								if(!site.marker) {
+									var marker = L.marker(latlng, {
+										icon: config.markerIcon,
+									});
+									marker.site = site;
+									siteLayer.addLayer(marker);
+									site.marker = marker;
+								}
+
+								var building = scope.getBuilding(site);
+								if(building) {
+									var popup = L.popup({
+										offset: L.point(0, 0),
+									}).setContent(building.address_line_1);
+									site.marker.bindPopup(popup);
+								}
+
+								(function(i, site) {
+									site.centerOnMap = function() {
+										map.setView(site.latlng, Math.max(17, map.getZoom()));
+										site.marker.togglePopup();
+									};
+									site.marker.on('click', function(e) {
+										var promise = search.get_building_snapshot(site.canonical_building_id);
+										promise.then(function(building) {
+											var site = scope.getSite(building);
+											var building = scope.getBuilding(site);
+											scope.initBuilding(i, building, site);
+											if(!site) {
+												console.error("Site not available! (TODO: need get_lightweight_building to also get the building site if not already loaded");
+											}
+											config.onSiteClick(building, site);
+										});
+									});
+								})(i, site);
+							}
+
+							for (var i in scope.buildings) {
+								var building = scope.buildings[i];
+								var site = scope.getSite(building);
+								scope.initBuilding(i, building, site);
+							}
+						}
+
+						map.on('moveend resize zoomend', _.debounce(function(e) {
+							// scope.$apply( function(scope) {
+							// 	var bounds = map.getBounds();
+							// 	for(var i in scope.buildings) {
+							// 		var building = scope.buildings[i];
+							// 		if(!building.site || bounds.contains(L.latLng(building.site.latlng))) {
+							// 			building[config.mapVisibleProperty] = true;
+							// 		} else {
+							// 			building[config.mapVisibleProperty] = false;
+							// 		}
+							// 	}
+							// });
+							config.onViewportChange(map);
+						}, 300));
+					},
+				}
+		}]);
 })(angular);
