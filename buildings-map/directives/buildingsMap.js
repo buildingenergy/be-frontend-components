@@ -9,10 +9,13 @@
 					restrict: 'A',
 					scope: {
 						buildings: '=buildings',
-						getSite: '=mapGetSite',
 						getSites: '&buildingSites',
 						mapboxId: '@',
 						getConfig: '&config',
+						getSite: '=mapGetSite',
+						// getSite is a function that needs to be accessible
+						// from the controller and needs to be defined in this
+						// directive
 					},
 					link: function(scope, element, attrs) {
 						if(!L.mapbox.accessToken) {
