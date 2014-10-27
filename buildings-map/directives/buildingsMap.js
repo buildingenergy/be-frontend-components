@@ -62,6 +62,12 @@
 							return scope.sites[bid];
 						};
 
+						/**
+						 * Determine if this marker is independent, or absorbed
+						 * into a cluster
+						 * @param  {[type]}  marker
+						 * @return {Boolean}
+						 */
 						var isIndependent = function(marker) {
 							var parent = siteLayer.getVisibleParent(marker);
 							return parent === null || parent === marker;
@@ -86,18 +92,52 @@
 						};
 
 						/**
+						 * set various properties on the site object
+						 * after loading
+						 * @param  {site} site
+						 */
+						var setupSite = function(site) {
+
+							site.latlng = {
+								lat: parseFloat(site.latitude),
+								lng: parseFloat(site.longitude),
+							};
+
+							if(!(site.marker && siteLayer.hasLayer(site.marker))) {
+								var marker = L.marker(site.latlng, {
+									icon: config.markerIcon,
+								});
+								siteLayer.addLayer(marker);
+								site.marker = marker;
+							}
+
+							site.centerOnMap = function() {
+								map.setView(site.latlng, Math.max(17, map.getZoom()));
+								site.marker.togglePopup();
+							};
+
+							site.marker.on('click', function(e) {
+								var promise = search.get_building_snapshot(site.canonical_building_id);
+								promise.then(function(building) {
+									setupBuildingSiteInterop(building, site, null, true);
+									if(!site) {
+										console.error("Site not available! (TODO: need get_lightweight_building to also get the building site if not already loaded");
+									}
+									config.onSiteClick(building, site);
+								});
+							});
+						};
+
+						/**
 						 * set up all relationships between building and site
-						 * if possible
+						 * (if possible)
 						 * @param  {building} building
 						 * @param  {site} site
 						 * @param  {int or null} buildingIndex
 						 * @param {bool} openPopupImmediately
 						 * Open the created popup immediately
 						 */
-						scope.setupBuildingSite = function(building, site, buildingIndex, openPopupImmediately) {
-							var popup = L.popup({
-								offset: L.point(0, 0),
-							}).setContent(building.address_line_1);
+						var setupBuildingSiteInterop = function(building, site, buildingIndex, openPopupImmediately) {
 							if(buildingIndex !== undefined && buildingIndex !== null) {
 								scope.$watch('buildings['+buildingIndex+'].checked', function() {
 									config.onBuildingCheckedChange(building, site);
@@ -133,6 +173,9 @@
 						}, 300));
 
 						map.on('zoomend', function(e) {
+							// this timeout is necessary because L.markercluster
+							// currently doesn't update its getVisibleParent
+							// until after the zoom animation is completed.
 							setTimeout(function() {
 								if(!scope._activeSite || !isIndependent(scope._activeSite.marker)) {
 									map.closePopup();
@@ -140,18 +183,17 @@
 							}, 600);
 						});
 
-						var has=0, hasnt=0;
-
 						scope.updateBuildings = function() {
 							var newSites = scope.getSites();
+							var i, building, site, siteData;
 
-							for (var i in scope.buildings) {
-								var building = scope.buildings[i];
+							for (i in scope.buildings) {
+								building = scope.buildings[i];
 								loadBuilding(i, building);
 							}
 
-							for (var i in newSites) {
-								var siteData = newSites[i];
+							for (i in newSites) {
+								siteData = newSites[i];
 
 								if(!siteData.latitude) {
 									// if the site wasn't geocoded, don't even bother
@@ -160,54 +202,19 @@
 									continue;
 								}
 
-								var site = loadSite(siteData);
-
-								if(siteLayer.hasLayer(site.marker)) {
-									has += 1;
-								} else {
-									hasnt += 1;
-								}
-
-								site.latlng = {
-									lat: parseFloat(site.latitude),
-									lng: parseFloat(site.longitude),
-								}
-
-								if(!(site.marker && siteLayer.hasLayer(site.marker))) {
-									var marker = L.marker(site.latlng, {
-										icon: config.markerIcon,
-									});
-									siteLayer.addLayer(marker);
-									site.marker = marker;
-								}
-
-								(function(i, site) {
-									site.centerOnMap = function() {
-										map.setView(site.latlng, Math.max(17, map.getZoom()));
-										site.marker.togglePopup();
-									};
-									site.marker.on('click', function(e) {
-										var promise = search.get_building_snapshot(site.canonical_building_id);
-										promise.then(function(building) {
-											scope.setupBuildingSite(building, site, null, true);
-											if(!site) {
-												console.error("Site not available! (TODO: need get_lightweight_building to also get the building site if not already loaded");
-											}
-											config.onSiteClick(building, site);
-										});
-									});
-								})(i, site);
+								site = loadSite(siteData);
+								setupSite(site);
 							}
 
-							for (var i in scope.buildings) {
-								var building = scope.buildings[i];
-								var site = scope.getSite(building);
+							for (i in scope.buildings) {
+								building = scope.buildings[i];
+								site = scope.getSite(building);
 								if(site) {
-									scope.setupBuildingSite(building, site, i);
+									setupBuildingSiteInterop(building, site, i);
 								} // else, the building was not geocoded
 							}
-						}
+						};
 					},
-				}
+				};
 		}]);
 })(angular);
