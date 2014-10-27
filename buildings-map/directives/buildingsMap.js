@@ -9,7 +9,8 @@
 					restrict: 'A',
 					scope: {
 						buildings: '=buildings',
-						sites: '=buildingSites',
+						getSite: '=mapGetSite',
+						getSites: '&buildingSites',
 						mapboxId: '@',
 						getConfig: '&config',
 					},
@@ -38,8 +39,8 @@
 						});
 
 						scope._buildingIndices = {};
-						scope._siteIndices = {};
 						scope._activeSite = null;
+						scope.sites = {};
 
 						scope.setMapBounds = _.debounce( function(map, layer) {
 							if(layer.getLayers().length > 0) {
@@ -50,26 +51,30 @@
 
 						var loadBuilding = function(index, building) {
 							scope._buildingIndices[building.canonical_building] = index;
-						}
+							search.building_snapshot_cache[building.canonical_building] = building;
+						};
 
-						var loadSite = function(index, site) {
-							scope._siteIndices[site.canonical_building_id] = index;
-						}
+						var loadSite = function(siteData) {
+							var bid = siteData.canonical_building_id;
+							if(!scope.sites[bid]) {
+								scope.sites[bid] = siteData;
+							}
+							return scope.sites[bid];
+						};
 
 						var isIndependent = function(marker) {
 							var parent = siteLayer.getVisibleParent(marker);
-							console.log(marker, parent, parent == marker, parent === marker);
-							return parent === null || parent === marker
-						}
+							return parent === null || parent === marker;
+						};
 
 						/**
 						 * get site corresponding to a building
 						 * @param  {building} building
 						 * @return {site or null}
 						 */
-						scope.getSite = function(building) {
-							return this.sites[this._siteIndices[building.canonical_building]];
-						}
+						scope.getSite = function(building, print) {
+							return scope.sites[building.canonical_building];
+						};
 
 						/**
 						 * get the building corresponding to a site
@@ -77,8 +82,8 @@
 						 * @return {building or null}
 						 */
 						scope.getBuilding = function(site) {
-							return this.buildings[this._buildingIndices[site.canonical_building_id]];
-						}
+							return scope.buildings[this._buildingIndices[site.canonical_building_id]];
+						};
 
 						/**
 						 * set up all relationships between building and site
@@ -108,13 +113,14 @@
 								})
 								.setContent(building.address_line_1)
 								.setLatLng(site.latlng);
+
 								site.popup = popup;
 								site.marker.on('click', onMarkerClick);
 								if(openPopupImmediately) {
 									onMarkerClick();
 								}
 							}
-						}
+						};
 
 						scope.$watch('buildings', function() {
 							scope.updateBuildings();
@@ -123,49 +129,57 @@
 						scope.setMapBounds(map, siteLayer);
 
 						map.on('moveend resize zoomend', _.debounce(function(e) {
-							if(scope._activeSite && !isIndependent(scope._activeSite.marker)) {
-								map.closePopup(scope._activeSite.popup);
-							}
 							config.onViewportChange(map);
 						}, 300));
+
+						map.on('zoomend', function(e) {
+							setTimeout(function() {
+								if(!scope._activeSite || !isIndependent(scope._activeSite.marker)) {
+									map.closePopup();
+								}
+							}, 600);
+						});
 
 						var has=0, hasnt=0;
 
 						scope.updateBuildings = function() {
-							siteLayer.clearLayers();
+							var newSites = scope.getSites();
 
 							for (var i in scope.buildings) {
 								var building = scope.buildings[i];
 								loadBuilding(i, building);
 							}
 
-							for (var i in scope.sites) {
-								var site = scope.sites[i];
+							for (var i in newSites) {
+								var siteData = newSites[i];
 
-								if(!site.latitude) {
+								if(!siteData.latitude) {
 									// if the site wasn't geocoded, don't even bother
 									// TODO: in the future, the backend response shouldn't
 									// even include non-geocoded sites
 									continue;
 								}
 
-								loadSite(i, site);
+								var site = loadSite(siteData);
 
-								var latlng = site.latlng = {
+								if(siteLayer.hasLayer(site.marker)) {
+									has += 1;
+								} else {
+									hasnt += 1;
+								}
+
+								site.latlng = {
 									lat: parseFloat(site.latitude),
 									lng: parseFloat(site.longitude),
 								}
+
 								if(!(site.marker && siteLayer.hasLayer(site.marker))) {
-									var marker = L.marker(latlng, {
+									var marker = L.marker(site.latlng, {
 										icon: config.markerIcon,
 									});
-									marker.site = site;
 									siteLayer.addLayer(marker);
 									site.marker = marker;
 								}
-
-
-								// var building = scope.getBuilding(site);
 
 								(function(i, site) {
 									site.centerOnMap = function() {
@@ -175,7 +189,6 @@
 									site.marker.on('click', function(e) {
 										var promise = search.get_building_snapshot(site.canonical_building_id);
 										promise.then(function(building) {
-											var site = scope.getSite(building);
 											scope.setupBuildingSite(building, site, null, true);
 											if(!site) {
 												console.error("Site not available! (TODO: need get_lightweight_building to also get the building site if not already loaded");
@@ -191,15 +204,8 @@
 								var site = scope.getSite(building);
 								if(site) {
 									scope.setupBuildingSite(building, site, i);
-
-									if(siteLayer.hasLayer(site.marker)) {
-										has += 1;
-									} else {
-										hasnt += 1;
-									}
 								} // else, the building was not geocoded
 							}
-							console.log(has, hasnt);
 						}
 					},
 				}
