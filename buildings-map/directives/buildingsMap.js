@@ -16,6 +16,8 @@
 						// getSite is a function that needs to be accessible
 						// from the controller and needs to be defined in this
 						// directive
+						initialCenter: '&',
+						initialZoom: '&',
 					},
 					link: function(scope, element, attrs) {
 						if(!L.mapbox.accessToken) {
@@ -114,11 +116,15 @@
 								site.marker = marker;
 							}
 
+							// TODO: make function available to controller which
+							// takes a site argument
 							site.centerOnMap = function() {
 								map.setView(site.latlng, Math.max(17, map.getZoom()));
 								site.marker.togglePopup();
 							};
 
+
+							// TODO: define function once, use `this`
 							site.marker.on('click', function(e) {
 								var promise = search.get_building_snapshot(site.canonical_building_id);
 								promise.then(function(building) {
@@ -169,7 +175,11 @@
 							scope.updateBuildings();
 						});
 
-						scope.setMapBounds(map, siteLayer);
+						if(scope.initialCenter() && scope.initialZoom()) {
+							map.setView(scope.initialCenter(), scope.initialZoom());
+						} else {
+							scope.setMapBounds(map, siteLayer);
+						}
 
 						map.on('moveend resize zoomend', _.debounce(function(e) {
 							config.onViewportChange(map);
