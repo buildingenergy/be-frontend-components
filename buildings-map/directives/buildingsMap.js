@@ -55,8 +55,7 @@
 						scope._buildingIndices = {};
 						scope._siteIndices = {};
 
-
-						scope.loadBuilding = function(i, building, site) {
+						scope.loadBuilding = function(i, building) {
 							this._buildingIndices[building.canonical_building] = i;
 						}
 
@@ -68,9 +67,11 @@
 							if(site) {
 								building.site = site;
 								site.marker.bindPopup(popup);
-								scope.$watch('buildings['+i+'].checked', function() {
-									config.onBuildingCheckedChange(building, site);
-								});
+								if(i !== undefined && i !== null) {
+									scope.$watch('buildings['+i+'].checked', function() {
+										config.onBuildingCheckedChange(building, site);
+									});
+								}
 							}
 						}
 
@@ -132,8 +133,7 @@
 										var promise = search.get_building_snapshot(site.canonical_building_id);
 										promise.then(function(building) {
 											var site = scope.getSite(building);
-											var building = scope.getBuilding(site);
-											scope.initBuilding(i, building, site);
+											scope.initBuilding(null, building, site);
 											if(!site) {
 												console.error("Site not available! (TODO: need get_lightweight_building to also get the building site if not already loaded");
 											}
