@@ -32,8 +32,6 @@
 							},
 						});
 
-						map.addLayer(siteLayer);
-
 						var config = _.defaults(scope.getConfig(), {
 							markerIcon: L.mapbox.marker.icon({
 								'marker-size': 'small',
@@ -44,16 +42,22 @@
 						});
 
 						var _buildingWatches = [];
-						scope._buildingIndices = {};
-						scope._activeSite = null;
-						scope.sites = {};
+						var _buildingIndices = {};
+						var _activeSite = null;
 
-						scope.setMapBounds = _.debounce( function(map, layer) {
+
+						/**
+						 * Fit map bounds to markers displayed
+						 * @param  {L.Map} map
+						 * @param  {L.LayerGroup} layer
+						 */
+						var setMapBounds = _.debounce( function(map, layer) {
 							if(layer.getLayers().length > 0) {
 								var bounds = layer.getBounds();
 								map.fitBounds(bounds, {padding: [20, 20]});
 							}
 						}, 300);
+
 
 						var _removeWatches = function() {
 							_buildingWatches.forEach(
@@ -63,7 +67,7 @@
 						};
 
 						var loadBuilding = function(index, building) {
-							scope._buildingIndices[building.canonical_building] = index;
+							_buildingIndices[building.canonical_building] = index;
 							search.building_snapshot_cache[building.canonical_building] = building;
 						};
 
@@ -84,24 +88,6 @@
 						var isIndependent = function(marker) {
 							var parent = siteLayer.getVisibleParent(marker);
 							return parent === null || parent === marker;
-						};
-
-						/**
-						 * get site corresponding to a building
-						 * @param  {building} building
-						 * @return {site or null}
-						 */
-						scope.getSite = function(building, print) {
-							return scope.sites[building.canonical_building];
-						};
-
-						/**
-						 * get the building corresponding to a site
-						 * @param  {site} site
-						 * @return {building or null}
-						 */
-						scope.getBuilding = function(site) {
-							return scope.buildings[this._buildingIndices[site.canonical_building_id]];
 						};
 
 						/**
@@ -133,7 +119,7 @@
 
 							// TODO: define function once, use `this`
 							site.marker.on('click', function(e) {
-								scope._activeSite = site;
+								_activeSite = site;
 								var promise = search.get_building_snapshot(site.canonical_building_id);
 								promise.then(function(building) {
 									setupBuildingSiteInterop(building, site, null, true);
@@ -173,6 +159,34 @@
 							}
 						};
 
+						map.addLayer(siteLayer);
+
+
+						/***********************
+						** SCOPE DECLARATIONS **
+						***********************/
+
+						scope.sites = {};
+
+						/**
+						 * get site corresponding to a building
+						 * @param  {building} building
+						 * @return {site or null}
+						 */
+						scope.getSite = function(building, print) {
+							return scope.sites[building.canonical_building];
+						};
+
+						/**
+						 * get the building corresponding to a site
+						 * @param  {site} site
+						 * @return {building or null}
+						 */
+						scope.getBuilding = function(site) {
+							return scope.buildings[_buildingIndices[site.canonical_building_id]];
+						};
+
+
 						scope.$watch('buildings', function() {
 							scope.updateBuildings();
 						});
@@ -180,7 +194,7 @@
 						if(scope.initialCenter() && scope.initialZoom()) {
 							map.setView(scope.initialCenter(), scope.initialZoom());
 						} else {
-							scope.setMapBounds(map, siteLayer);
+							setMapBounds(map, siteLayer);
 						}
 
 						map.on('moveend resize zoomend', _.debounce(function(e) {
@@ -188,7 +202,7 @@
 						}, 300));
 
 						siteLayer.on('animationend', function(e) {
-							if(!scope._activeSite || !isIndependent(scope._activeSite.marker)) {
+							if(!_activeSite || !isIndependent(_activeSite.marker)) {
 								map.closePopup();
 							}
 						});
