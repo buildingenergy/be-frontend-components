@@ -178,15 +178,10 @@
 							config.onViewportChange(map);
 						}, 300));
 
-						map.on('zoomend', function(e) {
-							// this timeout is necessary because L.markercluster
-							// currently doesn't update its getVisibleParent
-							// until after the zoom animation is completed.
-							setTimeout(function() {
-								if(!scope._activeSite || !isIndependent(scope._activeSite.marker)) {
-									map.closePopup();
-								}
-							}, 600);
+						siteLayer.on('animationend', function(e) {
+							if(!scope._activeSite || !isIndependent(scope._activeSite.marker)) {
+								map.closePopup();
+							}
 						});
 
 						scope.updateBuildings = function() {
