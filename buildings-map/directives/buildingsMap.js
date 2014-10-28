@@ -123,9 +123,9 @@
 								site.marker.togglePopup();
 							};
 
-
 							// TODO: define function once, use `this`
 							site.marker.on('click', function(e) {
+								scope._activeSite = site;
 								var promise = search.get_building_snapshot(site.canonical_building_id);
 								promise.then(function(building) {
 									setupBuildingSiteInterop(building, site, null, true);
@@ -152,21 +152,14 @@
 									config.onBuildingCheckedChange(building, site);
 								});
 							}
-							if(!site.popup) {
-								var onMarkerClick = function(e) {
-									map.openPopup(site.popup);
-									scope._activeSite = site;
-								};
-								var popup = L.popup({
-									offset: L.point(0, -30),
-								})
-								.setContent(building.address_line_1)
-								.setLatLng(site.latlng);
+							if(!site.marker.getPopup()) {
+								var markerText = building.address_line_1;
+								site.marker.bindPopup(markerText, {
+									offset: [0, -30],
+								});
 
-								site.popup = popup;
-								site.marker.on('click', onMarkerClick);
 								if(openPopupImmediately) {
-									onMarkerClick();
+									site.marker.openPopup();
 								}
 							}
 						};
