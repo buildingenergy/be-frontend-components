@@ -43,6 +43,7 @@
 							onSiteClick: function(building) {},
 						});
 
+						var _buildingWatches = [];
 						scope._buildingIndices = {};
 						scope._activeSite = null;
 						scope.sites = {};
@@ -53,6 +54,13 @@
 								map.fitBounds(bounds, {padding: [20, 20]});
 							}
 						}, 300);
+
+						var _removeWatches = function() {
+							_buildingWatches.forEach(
+								function(cb) { cb(); }
+							);
+							_buildingWatches = [];
+						};
 
 						var loadBuilding = function(index, building) {
 							scope._buildingIndices[building.canonical_building] = index;
@@ -148,9 +156,10 @@
 						 */
 						var setupBuildingSiteInterop = function(building, site, buildingIndex, openPopupImmediately) {
 							if(buildingIndex !== undefined && buildingIndex !== null) {
-								scope.$watch('buildings['+buildingIndex+'].checked', function() {
-									config.onBuildingCheckedChange(building, site);
+								var watch = scope.$watch('buildings['+buildingIndex+'].checked', function() {
+									config.onBuildingCheckedChange(building, scope.getSite(building));
 								});
+								_buildingWatches.push(watch);
 							}
 							if(!site.marker.getPopup()) {
 								var markerText = building.address_line_1;
@@ -206,6 +215,8 @@
 								site = loadSite(siteData);
 								setupSite(site);
 							}
+
+							_removeWatches();
 
 							for (i in scope.buildings) {
 								building = scope.buildings[i];
