@@ -45,19 +45,21 @@
 						var _buildingIndices = {};
 						var _activeSite = null;
 
+						var _setMapBounds = function(map, layer) {
+							if(layer.getLayers().length > 0) {
+								var bounds = layer.getBounds();
+								map.fitBounds(bounds, {padding: [20, 20]});
+							}
+						};
 
 						/**
 						 * Fit map bounds to markers displayed
 						 * @param  {L.Map} map
 						 * @param  {L.LayerGroup} layer
 						 */
-						var setMapBounds = _.debounce( function(map, layer) {
-							if(layer.getLayers().length > 0) {
-								var bounds = layer.getBounds();
-								map.fitBounds(bounds, {padding: [20, 20]});
-							}
-						}, 300);
+						var setMapBounds = _.debounce(_setMapBounds);
 
+						var setInitialMapBounds = _.once(_setMapBounds);
 
 						var _removeWatches = function() {
 							_buildingWatches.forEach(
@@ -187,19 +189,17 @@
 						};
 
 
-						scope.$watch('buildings', function() {
+						scope.$watch('buildings', _.debounce(function() {
 							scope.updateBuildings();
-						});
+						}, 1000));
 
 						if(scope.initialCenter() && scope.initialZoom()) {
 							map.setView(scope.initialCenter(), scope.initialZoom());
-						} else {
-							setMapBounds(map, siteLayer);
 						}
 
-						map.on('moveend resize zoomend', _.debounce(function(e) {
+						map.on('moveend resize zoomend', _.after(3, _.debounce(function(e) {
 							config.onViewportChange(map);
-						}, 300));
+						}, 300)));
 
 						siteLayer.on('animationend', function(e) {
 							if(!_activeSite || !isIndependent(_activeSite.marker)) {
@@ -209,6 +209,7 @@
 
 						scope.updateBuildings = function() {
 							var newSites = scope.getSites();
+							console.log('sites', newSites);
 							var i, building, site, siteData;
 
 							for (i in scope.buildings) {
@@ -239,7 +240,12 @@
 									setupBuildingSiteInterop(building, site, i);
 								} // else, the building was not geocoded
 							}
+							console.log(siteLayer.getLayers());
+							setInitialMapBounds(map, siteLayer);
 						};
+
+						search.search_buildings();
+						scope.updateBuildings();
 					},
 				};
 		}]);
