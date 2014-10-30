@@ -166,11 +166,14 @@
 							scope.updateBuildings();
 						});
 
-						scope.setMapBounds(map, siteLayer);
-
-						map.on('moveend resize zoomend', _.debounce(function(e) {
-							config.onViewportChange(map);
-						}, 300));
+						map.on('load', function(e) {
+							scope.setMapBounds(map, siteLayer);
+							map.on('zoomend dragend resize', _.debounce(function(e) {
+								// NOTE: DON'T use moveend,
+								// because that fires when the map loads!
+								config.onViewportChange(map);
+							}, 100));
+						})
 
 						map.on('zoomend', function(e) {
 							// this timeout is necessary because L.markercluster
