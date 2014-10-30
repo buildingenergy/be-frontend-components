@@ -9,10 +9,15 @@
 					restrict: 'A',
 					scope: {
 						buildings: '=buildings',
-						getSite: '=mapGetSite',
 						getSites: '&buildingSites',
 						mapboxId: '@',
 						getConfig: '&config',
+						getSite: '=mapGetSite',
+						// getSite is a function that needs to be accessible
+						// from the controller and needs to be defined in this
+						// directive
+						initialCenter: '&',
+						initialZoom: '&',
 					},
 					link: function(scope, element, attrs) {
 						if(!L.mapbox.accessToken) {
@@ -27,8 +32,6 @@
 							},
 						});
 
-						map.addLayer(siteLayer);
-
 						var config = _.defaults(scope.getConfig(), {
 							markerIcon: L.mapbox.marker.icon({
 								'marker-size': 'small',
@@ -38,19 +41,33 @@
 							onSiteClick: function(building) {},
 						});
 
-						scope._buildingIndices = {};
-						scope._activeSite = null;
-						scope.sites = {};
+						var _buildingWatches = [];
+						var _buildingIndices = {};
+						var _activeSite = null;
 
-						scope.setMapBounds = _.debounce( function(map, layer) {
+
+						/**
+						 * Fit map bounds to markers displayed
+						 * @param  {L.Map} map
+						 * @param  {L.LayerGroup} layer
+						 */
+						var setMapBounds = _.debounce( function(map, layer) {
 							if(layer.getLayers().length > 0) {
 								var bounds = layer.getBounds();
 								map.fitBounds(bounds, {padding: [20, 20]});
 							}
 						}, 300);
 
+
+						var _removeWatches = function() {
+							_buildingWatches.forEach(
+								function(cb) { cb(); }
+							);
+							_buildingWatches = [];
+						};
+
 						var loadBuilding = function(index, building) {
-							scope._buildingIndices[building.canonical_building] = index;
+							_buildingIndices[building.canonical_building] = index;
 							search.building_snapshot_cache[building.canonical_building] = building;
 						};
 
@@ -74,24 +91,6 @@
 						};
 
 						/**
-						 * get site corresponding to a building
-						 * @param  {building} building
-						 * @return {site or null}
-						 */
-						scope.getSite = function(building, print) {
-							return scope.sites[building.canonical_building];
-						};
-
-						/**
-						 * get the building corresponding to a site
-						 * @param  {site} site
-						 * @return {building or null}
-						 */
-						scope.getBuilding = function(site) {
-							return scope.buildings[this._buildingIndices[site.canonical_building_id]];
-						};
-
-						/**
 						 * set various properties on the site object
 						 * after loading
 						 * @param  {site} site
@@ -111,12 +110,16 @@
 								site.marker = marker;
 							}
 
+							// TODO: make function available to controller which
+							// takes a site argument
 							site.centerOnMap = function() {
 								map.setView(site.latlng, Math.max(17, map.getZoom()));
 								site.marker.togglePopup();
 							};
 
+							// TODO: define function once, use `this`
 							site.marker.on('click', function(e) {
+								_activeSite = site;
 								var promise = search.get_building_snapshot(site.canonical_building_id);
 								promise.then(function(building) {
 									setupBuildingSiteInterop(building, site, null, true);
@@ -139,35 +142,57 @@
 						 */
 						var setupBuildingSiteInterop = function(building, site, buildingIndex, openPopupImmediately) {
 							if(buildingIndex !== undefined && buildingIndex !== null) {
-								scope.$watch('buildings['+buildingIndex+'].checked', function() {
-									config.onBuildingCheckedChange(building, site);
+								var watch = scope.$watch('buildings['+buildingIndex+'].checked', function() {
+									config.onBuildingCheckedChange(building, scope.getSite(building));
 								});
+								_buildingWatches.push(watch);
 							}
-							if(!site.popup) {
-								var onMarkerClick = function(e) {
-									map.openPopup(site.popup);
-									scope._activeSite = site;
-								};
-								var popup = L.popup({
-									offset: L.point(0, -30),
-								})
-								.setContent(building.address_line_1)
-								.setLatLng(site.latlng);
+							if(!site.marker.getPopup()) {
+								var markerText = building.address_line_1;
+								site.marker.bindPopup(markerText, {
+									offset: [0, -30],
+								});
 
-								site.popup = popup;
-								site.marker.on('click', onMarkerClick);
 								if(openPopupImmediately) {
-									onMarkerClick();
+									site.marker.openPopup();
 								}
 							}
 						};
+
+						map.addLayer(siteLayer);
+
+
+						/***********************
+						** SCOPE DECLARATIONS **
+						***********************/
+
+						scope.sites = {};
+
+						/**
+						 * get site corresponding to a building
+						 * @param  {building} building
+						 * @return {site or null}
+						 */
+						scope.getSite = function(building, print) {
+							return scope.sites[building.canonical_building];
+						};
+
+						/**
+						 * get the building corresponding to a site
+						 * @param  {site} site
+						 * @return {building or null}
+						 */
+						scope.getBuilding = function(site) {
+							return scope.buildings[_buildingIndices[site.canonical_building_id]];
+						};
+
 
 						scope.$watch('buildings', function() {
 							scope.updateBuildings();
 						});
 
 						map.on('load', function(e) {
-							scope.setMapBounds(map, siteLayer);
+							setMapBounds(map, siteLayer);
 							map.on('zoomend dragend resize', _.debounce(function(e) {
 								// NOTE: DON'T use moveend,
 								// because that fires when the map loads!
@@ -175,15 +200,16 @@
 							}, 100));
 						})
 
-						map.on('zoomend', function(e) {
-							// this timeout is necessary because L.markercluster
-							// currently doesn't update its getVisibleParent
-							// until after the zoom animation is completed.
-							setTimeout(function() {
-								if(!scope._activeSite || !isIndependent(scope._activeSite.marker)) {
-									map.closePopup();
-								}
-							}, 600);
+						if(scope.initialCenter() && scope.initialZoom()) {
+							map.setView(scope.initialCenter(), scope.initialZoom());
+						} else {
+							setMapBounds(map, siteLayer);
+						}
+
+						siteLayer.on('animationend', function(e) {
+							if(!_activeSite || !isIndependent(_activeSite.marker)) {
+								map.closePopup();
+							}
 						});
 
 						scope.updateBuildings = function() {
@@ -208,6 +234,8 @@
 								site = loadSite(siteData);
 								setupSite(site);
 							}
+
+							_removeWatches();
 
 							for (i in scope.buildings) {
 								building = scope.buildings[i];
