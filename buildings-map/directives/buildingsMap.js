@@ -39,6 +39,9 @@
 							}),
 							onViewportChange: function() {},
 							onSiteClick: function(building) {},
+							markerContent: function(building) {
+								return "" + building.address_line_1;
+							},
 						});
 
 						var _buildingWatches = [];
@@ -148,8 +151,7 @@
 								_buildingWatches.push(watch);
 							}
 							if(!site.marker.getPopup()) {
-								var markerText = building.address_line_1;
-								site.marker.bindPopup(markerText, {
+								site.marker.bindPopup(config.markerContent(building), {
 									offset: [0, -30],
 								});
 
