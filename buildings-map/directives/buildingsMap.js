@@ -39,7 +39,7 @@
 							}),
 							onViewportChange: function() {},
 							onSiteClick: function(building) {},
-							markerContent: function(building) {
+							popupContent: function(building) {
 								return "" + building.address_line_1;
 							},
 						});
@@ -151,13 +151,25 @@
 								_buildingWatches.push(watch);
 							}
 							if(!site.marker.getPopup()) {
-								site.marker.bindPopup(config.markerContent(building), {
-									offset: [0, -30],
+								var popup = L.popup({
+									minWidth: 400,
+									maxWidth: 400,
+									closeButton: false,
+									offset: L.point(0, -50),
+									className: 'custom-classname',
+								}).setContent(config.popupContent(building));
+
+								site.marker.bindPopup(popup, {
+									offset: L.point(0, -50),
 								});
 
-								if(openPopupImmediately) {
-									site.marker.openPopup();
-								}
+								console.log(popup.offset);
+
+								// if(openPopupImmediately) {
+								// 	site.marker.openPopup({
+								// 		offset: [0, -50],
+								// 	});
+								// }
 							}
 						};
 
