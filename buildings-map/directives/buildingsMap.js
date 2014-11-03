@@ -152,24 +152,15 @@
 							}
 							if(!site.marker.getPopup()) {
 								var popup = L.popup({
+									autoPan: false,
 									minWidth: 400,
 									maxWidth: 400,
 									closeButton: false,
-									offset: L.point(0, -50),
-									className: 'custom-classname',
 								}).setContent(config.popupContent(building));
+								popup.site = site;
+								popup.marker = site.marker; // this is apparently the only way to access the popup's marker
 
-								site.marker.bindPopup(popup, {
-									offset: L.point(0, -50),
-								});
-
-								console.log(popup.offset);
-
-								// if(openPopupImmediately) {
-								// 	site.marker.openPopup({
-								// 		offset: [0, -50],
-								// 	});
-								// }
+								site.marker.bindPopup(popup, {});
 							}
 						};
 
@@ -212,6 +203,7 @@
 								// because that fires when the map loads!
 								config.onViewportChange(map);
 							}, 100));
+							config.initialize(map);
 						})
 
 						if(scope.initialCenter() && scope.initialZoom()) {
