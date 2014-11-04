@@ -203,7 +203,9 @@
 								// because that fires when the map loads!
 								config.onViewportChange(map);
 							}, 100));
-							config.initialize(map);
+							if (config.initialize) {
+								config.initialize(map);
+							}
 						})
 
 						if(scope.initialCenter() && scope.initialZoom()) {
