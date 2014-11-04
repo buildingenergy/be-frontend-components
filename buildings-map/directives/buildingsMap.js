@@ -198,11 +198,13 @@
 
 						map.on('load', function(e) {
 							setMapBounds(map, siteLayer);
-							map.on('zoomend dragend resize', _.debounce(function(e) {
+
+							// debounce, and throw away the first invocation
+							map.on('zoomend dragend resize', _.debounce(_.after(2, function(e) {
 								// NOTE: DON'T use moveend,
 								// because that fires when the map loads!
 								config.onViewportChange(map);
-							}, 100));
+							}, 100)));
 							if (config.initialize) {
 								config.initialize(map);
 							}
