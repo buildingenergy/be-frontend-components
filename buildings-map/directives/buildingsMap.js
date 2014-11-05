@@ -111,6 +111,7 @@
 								});
 								siteLayer.addLayer(marker);
 								site.marker = marker;
+								marker.site = site;
 							}
 
 							// TODO: make function available to controller which
@@ -224,6 +225,11 @@
 
 						scope.updateBuildings = function() {
 							var newSites = scope.getSites();
+							var newSiteMap = {};
+							for (var i in newSites) {
+								newSiteMap[newSites[i].canonical_building_id] = newSites[i];
+							}
+							var currentMarkers = siteLayer.getLayers();
 							var i, building, site, siteData;
 
 							for (i in scope.buildings) {
@@ -243,6 +249,15 @@
 
 								site = loadSite(siteData);
 								setupSite(site);
+							}
+
+
+
+							for (i in currentMarkers) {
+								var marker = currentMarkers[i];
+								if (!(marker.site.canonical_building_id in newSiteMap)) {
+									siteLayer.removeLayer(marker);
+								}
 							}
 
 							_removeWatches();
