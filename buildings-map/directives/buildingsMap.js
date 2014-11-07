@@ -30,7 +30,15 @@
 						var defaultMarkerIcon = null;
 						var map;
 
-						if (scope.tileset == 'mapbox') {
+						if (scope.tileset == 'mapquest-osm') {
+							map = L.map(div);
+							map.addLayer(
+								L.tileLayer('http://otile{s}.mqcdn.com/tiles/1.0.0/map/{z}/{x}/{y}.jpeg', {
+									attribution: 'Tiles by <a href="http://www.mapquest.com/">MapQuest</a> &mdash; Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
+									subdomains: '1234'
+								})
+							);
+						} else { //if (scope.tileset == 'mapbox') {
 							if(!L.mapbox.accessToken) {
 								console.error("Must supply L.mapbox.accessToken");
 							}
@@ -39,14 +47,6 @@
 								'marker-size': 'small',
 								'marker-color': '#AA60D6',
 							});
-						} else if (scope.tileset == 'mapquest-osm') {
-							map = L.map(div);
-							map.addLayer(
-								L.tileLayer('http://otile{s}.mqcdn.com/tiles/1.0.0/map/{z}/{x}/{y}.jpeg', {
-									attribution: 'Tiles by <a href="http://www.mapquest.com/">MapQuest</a> &mdash; Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
-									subdomains: '1234'
-								})
-							);
 						}
 
 						var config = _.defaults(scope.getConfig(), {
