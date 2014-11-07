@@ -4,7 +4,6 @@
 		.directive('buildingsMap', [
 			'search_service',
 			function(search) {
-
 				return {
 					restrict: 'A',
 					scope: {
@@ -13,6 +12,7 @@
 						mapboxId: '@',
 						getConfig: '&config',
 						getSite: '=mapGetSite',
+						tileset: '@',
 						// getSite is a function that needs to be accessible
 						// from the controller and needs to be defined in this
 						// directive
@@ -20,23 +20,37 @@
 						initialZoom: '&',
 					},
 					link: function(scope, element, attrs) {
-						if(!L.mapbox.accessToken) {
-							console.error("Must supply L.mapbox.accessToken");
-						}
 						var div = element[0];
-						var map = L.mapbox.map(div, scope.mapboxId);
 						var siteLayer = new L.MarkerClusterGroup({
 							spiderfyDistanceMultiplier: 2,
 							maxClusterRadius: function(zoom) {
 								return Math.max(10, 64 - 1*Math.pow(zoom, 1.11));
 							},
 						});
+						var defaultMarkerIcon = null;
+						var map;
 
-						var config = _.defaults(scope.getConfig(), {
-							markerIcon: L.mapbox.marker.icon({
+						if (scope.tileset == 'mapbox') {
+							if(!L.mapbox.accessToken) {
+								console.error("Must supply L.mapbox.accessToken");
+							}
+							map = L.mapbox.map(div, scope.mapboxId);
+							defaultMarkerIcon = L.mapbox.marker.icon({
 								'marker-size': 'small',
 								'marker-color': '#AA60D6',
-							}),
+							});
+						} else if (scope.tileset == 'mapquest-osm') {
+							map = L.map(div);
+							map.addLayer(
+								L.tileLayer('http://otile{s}.mqcdn.com/tiles/1.0.0/map/{z}/{x}/{y}.jpeg', {
+									attribution: 'Tiles by <a href="http://www.mapquest.com/">MapQuest</a> &mdash; Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
+									subdomains: '1234'
+								})
+							);
+						}
+
+						var config = _.defaults(scope.getConfig(), {
+							markerIcon: defaultMarkerIcon,
 							onViewportChange: function() {},
 							onSiteClick: function(building) {},
 							popupContent: function(building) {
