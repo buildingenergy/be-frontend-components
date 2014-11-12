@@ -12,7 +12,6 @@
 						getGeoJsonLayers: '&geojsonLayers',
 						mapboxId: '@',
 						getConfig: '&config',
-						getSite: '=mapGetSite',
 						tileset: '@',
 						// getSite is a function that needs to be accessible
 						// from the controller and needs to be defined in this
@@ -39,7 +38,8 @@
 							map.addLayer(
 								L.tileLayer('http://otile{s}.mqcdn.com/tiles/1.0.0/map/{z}/{x}/{y}.jpeg', {
 									attribution: 'Tiles by <a href="http://www.mapquest.com/">MapQuest</a> &mdash; Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
-									subdomains: '1234'
+									subdomains: '1234',
+									maxZoom: 18,  // Leaflet default
 								})
 							);
 						} else { //if (scope.tileset == 'mapbox') {
@@ -212,7 +212,7 @@
 						 * @param  {building} building
 						 * @return {site or null}
 						 */
-						scope.getSite = function(building, print) {
+						scope.getSite = function(building) {
 							return scope.sites[building.canonical_building];
 						};
 
@@ -230,6 +230,10 @@
 							scope.updateBuildings();
 						});
 
+						config.hackyScopePasser({
+							'getSite': scope.getSite,
+						});
+
 						map.on('load', function(e) {
 							setMapBounds(map, siteLayer);
 
@@ -240,7 +244,7 @@
 								config.onViewportChange(map);
 							}, 100)));
 							if (config.initialize) {
-								config.initialize(map);
+								config.initialize(map, scope);
 							}
 						})
 
