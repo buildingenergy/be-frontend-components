@@ -9,7 +9,6 @@
 					scope: {
 						buildings: '=buildings',
 						getSites: '&buildingSites',
-						getGeoJsonLayers: '&geojsonLayers',
 						mapboxId: '@',
 						getConfig: '&config',
 						tileset: '@',
@@ -43,7 +42,6 @@
 								})
 							);
 						} else { //if (scope.tileset == 'mapbox') {
-							// must include <script src="{{STATIC_URL}}vendors/bower_components/mapbox.js/mapbox.standalone.js"></script>
 							if(!L.mapbox.accessToken) {
 								console.error("Must supply L.mapbox.accessToken");
 							}
@@ -184,20 +182,6 @@
 							}
 						};
 
-						// add GeoJSON layers
-
-						var geojsonLayerDefs = scope.getGeoJsonLayers();
-						var controlLayers = {};
-
-						for (var i in geojsonLayerDefs) {
-							var json = geojsonLayerDefs[i];
-							var layer = L.geoJson(json);
-							controlLayers[json.name] = layer;
-						}
-
-						var layerControl = L.control.layers([], controlLayers, {}).addTo(map);
-
-						layerControl.addOverlay(siteLayer, "Buildings");
 						map.addLayer(siteLayer);
 
 
