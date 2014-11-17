@@ -75,6 +75,8 @@
 							if(layer.getLayers().length > 0) {
 								var bounds = layer.getBounds();
 								map.fitBounds(bounds, {padding: [20, 20]});
+							} else {
+								map.setView([40, -95], 4);
 							}
 						}, 300);
 
@@ -230,7 +232,7 @@
 							if (config.initialize) {
 								config.initialize(map, scope);
 							}
-						})
+						});
 
 						if(scope.initialCenter() && scope.initialZoom()) {
 							map.setView(scope.initialCenter(), scope.initialZoom());
@@ -271,8 +273,6 @@
 								site = loadSite(siteData);
 								setupSite(site);
 							}
-
-
 
 							for (i in currentMarkers) {
 								var marker = currentMarkers[i];
