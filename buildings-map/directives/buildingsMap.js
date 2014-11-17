@@ -186,6 +186,9 @@
 
 						map.addLayer(siteLayer);
 
+						var controlLayer = L.control.layers([], {
+							'Buildings': siteLayer,
+						}).addTo(map);
 
 						/***********************
 						** SCOPE DECLARATIONS **
@@ -230,7 +233,7 @@
 								config.onViewportChange(map);
 							}, 100)));
 							if (config.initialize) {
-								config.initialize(map, scope);
+								config.initialize(map, controlLayer);
 							}
 						});
 
