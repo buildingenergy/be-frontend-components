@@ -19,11 +19,22 @@
 						initialZoom: '&',
 					},
 					link: function(scope, element, attrs) {
+						var config = _.defaults(scope.getConfig(), {
+							markerIcon: defaultMarkerIcon,
+							onViewportChange: function() {},
+							onSiteClick: function(building) {},
+							popupContent: function(building) {
+								return "" + building.address_line_1;
+							},
+						});
+
 						var div = element[0];
 						var siteLayer = new L.MarkerClusterGroup({
 							spiderfyDistanceMultiplier: 2,
 							maxClusterRadius: function(zoom) {
-								return Math.max(10, 64 - 1*Math.pow(zoom, 1.11));
+								if (zoom <= 15) return 60;
+								else if (zoom <= 16) return 20;
+								else return 2;
 							},
 						});
 						var defaultMarkerIcon = null;
@@ -52,14 +63,6 @@
 							});
 						}
 
-						var config = _.defaults(scope.getConfig(), {
-							markerIcon: defaultMarkerIcon,
-							onViewportChange: function() {},
-							onSiteClick: function(building) {},
-							popupContent: function(building) {
-								return "" + building.address_line_1;
-							},
-						});
 
 						var _buildingWatches = [];
 						var _buildingIndices = {};
