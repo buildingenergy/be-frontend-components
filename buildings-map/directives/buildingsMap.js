@@ -19,13 +19,16 @@
 						initialZoom: '&',
 					},
 					link: function(scope, element, attrs) {
-						var config = _.defaults(scope.getConfig(), {
+						var noop = function() {};
+						var config = _.defaults(scope.getConfig() || {}, {
 							markerIcon: defaultMarkerIcon,
-							onViewportChange: function() {},
 							onSiteClick: function(building) {},
 							popupContent: function(building) {
 								return "" + building.address_line_1;
 							},
+							onViewportChange: noop,
+							onBuildingCheckedChange: noop,
+							hackyScopePasser: noop,
 						});
 
 						var div = element[0];
@@ -53,7 +56,9 @@
 								})
 							);
 						} else { //if (scope.tileset == 'mapbox') {
-							if(!L.mapbox.accessToken) {
+							if (!L.mapbox) {
+								console.error("No mapbox.js found!");
+							} else if (!L.mapbox.accessToken) {
 								console.error("Must supply L.mapbox.accessToken");
 							}
 							map = L.mapbox.map(div, scope.mapboxId);
@@ -182,7 +187,6 @@
 								}).setContent(config.popupContent(building));
 								popup.site = site;
 								popup.marker = site.marker; // this is apparently the only way to access the popup's marker
-
 								site.marker.bindPopup(popup, {});
 							}
 						};
@@ -255,11 +259,13 @@
 						scope.updateBuildings = function() {
 							var newSites = scope.getSites();
 							var newSiteMap = {};
-							for (var i in newSites) {
+							var i;
+							var currentMarkers = siteLayer.getLayers();
+							var building, site, siteData;
+
+							for (i in newSites) {
 								newSiteMap[newSites[i].canonical_building_id] = newSites[i];
 							}
-							var currentMarkers = siteLayer.getLayers();
-							var i, building, site, siteData;
 
 							for (i in scope.buildings) {
 								building = scope.buildings[i];
