@@ -1,5 +1,44 @@
 (function(angular) {
 
+	/**
+	 * Get class name based on relative map position
+	 * @param  {L.Map} map
+	 * @param  {L.Point} position The marker position
+	 * @return {String}          The popup class name
+	 */
+	var popupClassName = function(map, position) {
+	    var dim = map.getSize();
+	    var xClass, yClass;
+
+	    if (position.x <= dim.x/3) {
+	        xClass = 'left';
+	    } else if (position.x <= dim.x*2/3) {
+	        xClass = 'center';
+	    } else {
+	        xClass = 'right';
+	    }
+
+	    if (position.y <= dim.y/2) {
+	        yClass = 'top';
+	    } else {
+	        yClass = 'bottom';
+	    }
+	    return xClass + ' ' + yClass;
+	};
+
+	/**
+	 * Set popup class based on its position on the map
+	 * @param {L.Map} map
+	 * @param {L.Popup} popup
+	 */
+	var setPopupClass = function(map, popup) {
+
+	    var position = map.latLngToContainerPoint(popup.marker.getLatLng());
+	    $(popup._container).removeClass('top bottom left right center').addClass(
+	        popupClassName(map, position) + ' has_value'
+	    );
+	};
+
 	angular.module('BE.frontend.buildingsMap', [])
 		.directive('buildingsMap', [
 			'search_service',
@@ -230,6 +269,11 @@
 							'getSite': scope.getSite,
 						});
 
+						/************************
+						** MAP EVENT LISTENERS **
+						************************/
+
+
 						map.on('load', function(e) {
 							setMapBounds(map, siteLayer);
 
@@ -243,6 +287,14 @@
 								config.initialize(map, controlLayer);
 							}
 						});
+
+						map.on('popupopen', function(e) {
+						    setPopupClass(map, e.popup);
+						    $(e.popup._container).find('.close_it').one('click', function(e) {
+						        map.closePopup();
+						    });
+						});
+
 
 						if(scope.initialCenter() && scope.initialZoom()) {
 							map.setView(scope.initialCenter(), scope.initialZoom());
