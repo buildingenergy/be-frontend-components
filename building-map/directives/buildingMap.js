@@ -41,19 +41,16 @@
 
 	angular.module('BE.frontend.buildingMap')
 		.directive('buildingMap', [
-			'search_service',
-			function(search) {
+			function() {
 				return {
 					restrict: 'A',
 					scope: {
 						buildings: '=buildings',
 						getSites: '&buildingSites',
+						getDynamicBuilding: '=getDynamicBuilding',
 						mapboxId: '@',
 						getConfig: '&config',
 						tileset: '@',
-						// getSite is a function that needs to be accessible
-						// from the controller and needs to be defined in this
-						// directive
 						initialCenter: '&',
 						initialZoom: '&',
 					},
@@ -67,6 +64,17 @@
 
 						var _activeSite = null;
 
+
+						/**
+						 * Determine if this marker is independent, or absorbed
+						 * into a cluster
+						 * @param  {[type]}  marker
+						 * @return {Boolean}
+						 */
+						var isIndependent = function(marker) {
+							var parent = $scope.siteLayer.getVisibleParent(marker);
+							return parent === null || parent === marker;
+						};
 
 						/**
 						 * Fit map bounds to markers displayed
@@ -99,10 +107,6 @@
 							'Buildings': siteLayer,
 						}).addTo(map);
 
-						/***********************
-						** SCOPE DECLARATIONS **
-						***********************/
-
 
 						/************************
 						** MAP EVENT LISTENERS **
@@ -130,18 +134,17 @@
 						    });
 						});
 
-
 						if(scope.initialCenter() && scope.initialZoom()) {
 							map.setView(scope.initialCenter(), scope.initialZoom());
 						} else {
 							setMapBounds(map, scope.siteLayer);
 						}
 
-						scope.siteLayer.on('animationend', function(e) {
-							if(!_activeSite || !isIndependent(_activeSite.marker)) {
-								map.closePopup();
-							}
-						});
+						// scope.siteLayer.on('animationend', function(e) {
+						// 	if(!_activeSite || !isIndependent(_activeSite.marker)) {
+						// 		map.closePopup();
+						// 	}
+						// });
 
 					},
 				};

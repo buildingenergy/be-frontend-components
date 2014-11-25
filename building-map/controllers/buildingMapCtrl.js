@@ -52,8 +52,8 @@
 	angular.module('BE.frontend.buildingMap')
 		.controller('BuildingMapController', [
 			'$scope',
-			'search_service',
-			function($scope, search) {
+			'geo_service',
+			function($scope, geo) {
 
 				var noop = function() {};
 				var config = $scope.config = _.defaults($scope.getConfig() || {}, {
@@ -69,12 +69,12 @@
 
 				var _buildingWatches = [];
 				var _buildingIndices = {};
+                var _dynamicBuildings = {};  // mainly used to check if a building has been dynamically loaded yet
 				$scope.sites = {};
-
 
 				var loadBuilding = function(index, building) {
 					_buildingIndices[building.canonical_building] = index;
-					search.building_snapshot_cache[building.canonical_building] = building;
+					geo.cache_building(building);
 				};
 
 				var loadSite = function(siteData) {
@@ -137,18 +137,43 @@
 					return map;
 				};
 
+                var withDynamicBuilding = function(site, callback) {
+                    var promise = geo.get_building_snapshot(site.canonical_building_id);
+                    promise.then(function(data) {
+                        // we don't actually care about data.cached since we're checking caching ourselves
+                        var cached = data.cached;
+                        if (! _dynamicBuildings[site.canonical_building_id]) {
+                            _dynamicBuildings[site.canonical_building_id] = data.building;
+                        } else {
+                            cached = true;
+                        }
+                        if (! cached) {
+                            setupDynamicBuildingSiteInterop(data.building, site);
+                        }
+                        callback(data.building, cached);
+                    });
+                }
 
+                /**
+                 * Stuff that needs to happen after all buildings and sites
+                 * are initially loaded
+                 */
+                var setupStaticBuildingSiteInterop = function() {
+                    setupBuildingWatches();
+                }
 
-				/**
-				 * Determine if this marker is independent, or absorbed
-				 * into a cluster
-				 * @param  {[type]}  marker
-				 * @return {Boolean}
-				 */
-				var isIndependent = function(marker) {
-					var parent = $scope.siteLayer.getVisibleParent(marker);
-					return parent === null || parent === marker;
-				};
+                /**
+                 * Stuff that needs to happen when a building is dynamically
+                 * loaded wrt. a site (e.g. when a site is clicked for a building
+                 * that doesn't show in the table)
+                 *
+                 * Ideally these functions should be idempotent so we don't have
+                 * to check if they've already been called.
+                 */
+                var setupDynamicBuildingSiteInterop = function(building, site) {
+                    setupPopup(building, site);
+                }
+
 
 				/**
 				 * set various properties on the site object
@@ -171,24 +196,12 @@
 						marker.site = site;
 					}
 
-					// TODO: make function available to controller which
-					// takes a site argument
-					site.centerOnMap = function() {
-						$scope.map.setView(site.latlng, Math.max(17, $scope.map.getZoom()));
-						site.marker.togglePopup();
-					};
-
 					// TODO: define function once, use `this`
 					site.marker.on('click', function(e) {
 						_activeSite = site;
-						var promise = search.get_building_snapshot(site.canonical_building_id);
-						promise.then(function(building) {
-							setupPopup(building, site);
-							if(!site) {
-								console.error("Site not available! (TODO: need get_lightweight_building to also get the building site if not already loaded");
-							}
-							config.onSiteClick(building, site);
-						});
+						withDynamicBuilding(site, function(building) {
+                            config.onSiteClick(building, site);
+                        });
 					});
 				};
 
@@ -247,8 +260,31 @@
 					$scope.updateBuildings();
 				});
 
+                var openPopup = function(site) {
+                    withDynamicBuilding(site, function(building) {
+                        site.marker.openPopup();
+                    });
+                };
+
+                var closePopup = function() {
+                    map.closePopup();
+                };
+
+                var togglePopup = function(site) {
+                    withDynamicBuilding(site, function(building) {
+                        site.marker.togglePopup();
+                    });
+                };
+
 				config.loadAPI({
+                    'openPopup': openPopup,
+                    'closePopup': closePopup,
+                    'togglePopup': togglePopup,
 					'getSite': $scope.getSite,
+                    'withDynamicBuilding': withDynamicBuilding,
+                    'centerOnMap': function(site) {
+                        $scope.map.setView(site.latlng, Math.max(17, $scope.map.getZoom()));
+                    }
 				});
 
 				$scope.updateBuildings = function() {
@@ -296,7 +332,7 @@
 						} // else, the building was not geocoded
 					}
 
-					setupBuildingWatches();
+					setupStaticBuildingSiteInterop();
 
 				};
 			}
