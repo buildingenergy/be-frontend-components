@@ -39,6 +39,16 @@
 		);
 	};
 
+    var makePopupHTML = function(content) {
+        return ' \
+        <div class="map_pop_up_container bottom center"> \
+          <div class="arrow"></div> \
+          <div class="map_pop_up_inner"> \
+              ' + content + ' \
+          </div> \
+        </div>';
+    };
+
 	angular.module('BE.frontend.buildingMap')
 		.controller('BuildingMapController', [
 			'$scope',
@@ -49,12 +59,12 @@
 				var config = $scope.config = _.defaults($scope.getConfig() || {}, {
 					markerIcon: null,
 					onSiteClick: function(building) {},
-					popupContent: function(building) {
+					popupHTML: function(building) {
 						return "" + building.address_line_1;
 					},
 					onViewportChange: noop,
 					onBuildingChange: noop,
-					hackyScopePasser: noop,
+					loadAPI: {},
 				});
 
 				var _buildingWatches = [];
@@ -196,7 +206,9 @@
 							minWidth: 400,
 							maxWidth: 400,
 							closeButton: false,
-						}).setContent(config.popupContent(building));
+						}).setContent(
+                            makePopupHTML(config.popupHTML(building))
+                        );
 						popup.site = site;
 						popup.marker = site.marker; // this is apparently the only way to access the popup's marker
 						site.marker.bindPopup(popup, {});
@@ -224,7 +236,6 @@
 						if(site) {
 							var watch = $scope.$watch('buildings['+index+']', function(building) {
 								var site = $scope.getSite(building);
-								console.log(2, building, site);
 								config.onBuildingChange(building, site);
 							}, true);
 							_buildingWatches.push(watch);
@@ -232,12 +243,11 @@
 					}
 				}
 
-
 				$scope.$watch('buildings', function() {
 					$scope.updateBuildings();
 				});
 
-				config.hackyScopePasser({
+				config.loadAPI({
 					'getSite': $scope.getSite,
 				});
 
