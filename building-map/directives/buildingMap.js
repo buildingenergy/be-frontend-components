@@ -1,3 +1,33 @@
+/**
+ * Building Map Directive
+ *
+ * Creates a Leaflet map that displays clustered dynamically updated buildings
+ * with popups and all kinds of bells and whistles.
+ *
+ * A lot of the complexity of this code comes from the fact that we have to keep
+ * two distinct lists up to date and interoperating - the building list, which
+ * show up in the building table, and the "mapBuilding", or "site" list, which
+ * represents light-weight building objects that are displayed on the map.
+ * In general there are many more sites than buildings
+ * (up to 10,000 sites, up to 100 buildings), but when showing more information
+ * on a site (e.g. in a popup), the entire building object be present. If it
+ * already exists in the table, that object is used, but if not it is loaded
+ * asynchronously and the necessary objects and events are created and bound
+ * at that point
+ *
+ * Some key functions to understanding this code: (2014-11-26 MDD)
+ * loadAPI - a callback that lets the parent receive a handy API into map
+ * 		functionality
+ * withDynamicBuilding - accepts a callback that guarantees the existence of a
+ * 		building, crucial for working with the many times a building must be
+ * 		loaded asynchronously. It's safe to call this many times, as buildings
+ * 		are cached as they're loaded.
+ * updateBuildings - winds up being called every time a new search query is
+ * 		fired. Existing sites are not updated, their markers and popups are
+ * 		preserved
+ *
+ */
+
 (function(angular) {
 
 	/**

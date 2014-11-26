@@ -142,21 +142,26 @@
                 };
 
                 /**
-                 * Stuff that needs to happen when a building is dynamically
+                 * Stuff that needs to happen when a building is first dynamically
                  * loaded wrt. a site (e.g. when a site is clicked for a building
                  * that doesn't show in the table)
                  */
                 var setupDynamicBuildingSiteInterop = function(building, site) {
-
+                	// currently nothing special needs to happen...
                 };
 
-                var bindSiteEvents = function(site) {
-                    site.marker.on('click', _markerClick);
+                var _markerClick = function(e) {
+                    var site = e.target.site;
+                    $scope.withDynamicBuilding(site, function(building) {
+                        config.onSiteClick(building, site);
+                    });
                 };
 
 				/**
-				 * set various properties on the site object
-				 * after loading
+				 * Set various properties on the site object
+				 * after loading. Gets called often, and shouldn't
+				 * involve building data.
+				 *
 				 * @param  {site} site
 				 */
 				var setupSite = function(site) {
@@ -170,23 +175,15 @@
 						var marker = L.marker(site.latlng, {
 							icon: config.markerIcon,
 						});
-						site.marker = marker;
 						marker.site = site;
-						bindSiteEvents(site);
+						site.marker = marker;
+                    	site.marker.on('click', _markerClick);
 					}
-
 
 					if (! $scope.siteLayer.hasLayer(site.marker)) {
 						$scope.siteLayer.addLayer(site.marker);
 					}
 				};
-
-                var _markerClick = function(e) {
-                    var site = e.target.site;
-                    $scope.withDynamicBuilding(site, function(building) {
-                        config.onSiteClick(building, site);
-                    });
-                };
 
 				/**
 				 * set up all relationships between building and site
@@ -275,7 +272,6 @@
                  * @return {[type]}      [description]
                  */
                 var togglePopup = function(site) {
-                	console.log('TOGLOG', $scope.sitePopupIsOpen(site));
                     if ($scope.sitePopupIsOpen(site)) closePopup();
                     else openPopup(site);
                 };
@@ -328,9 +324,6 @@
 					for (i in newSites) {
                         siteData = newSites[i];
 
-                        // an unfortunate hack.
-                        var wasAlreadyLoaded = $scope.sites[siteData.canonical_building_id];
-
                         if(!siteData.latitude) {
                             // if the site wasn't geocoded, don't even bother
                             // TODO: in the future, the backend response shouldn't
@@ -338,14 +331,13 @@
                             continue;
                         }
 
-                        // order is very important here...
+                        // loadSite will return an existing site object.
+                        // This prevents sites from being destroyed and re-created
+                        // every time the map moves.
 						site = loadSite(siteData);
-                        // ...setupSite needs to happen every time...
+
+                        // setupSite needs to happen every time
 						setupSite(site);
-                        // if (!wasAlreadyLoaded) {
-                        //     // ...but bindSiteEvents should only happen once per site.
-                        //     bindSiteEvents(site);
-                        // }
 					}
 
 					for (i in currentMarkers) {
