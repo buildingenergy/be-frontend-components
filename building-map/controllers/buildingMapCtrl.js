@@ -138,6 +138,19 @@
 					return map;
 				};
 
+                /**
+                 * Very important function to asynchronously fetch and load building info
+                 * for a site, then do stuff. It's safe to call it a lot, since
+                 * all loaded buildings are cached, letting the promise resolve
+                 * immediately.
+                 *
+                 * @param  {site}   the site for which to fetch the building
+                 * @param  {Function} callback  a callback which takes the \
+                 *                              newly fetched building and \
+                 *                              a cached argument, specifying \
+                 *                              whether the building was already \
+                 *                              loaded or not
+                 */
                 $scope.withDynamicBuilding = function(site, callback) {
                     var promise = geo.get_building_snapshot(site.canonical_building_id);
                     promise.then(function(data) {
@@ -145,11 +158,9 @@
                         var cached = data.cached;
                         if (! _dynamicBuildings[site.canonical_building_id]) {
                             _dynamicBuildings[site.canonical_building_id] = data.building;
+                            setupDynamicBuildingSiteInterop(data.building, site);
                         } else {
                             cached = true;
-                        }
-                        if (! cached) {
-                            setupDynamicBuildingSiteInterop(data.building, site);
                         }
                         callback(data.building, cached);
                     });
@@ -169,7 +180,7 @@
                  * that doesn't show in the table)
                  */
                 var setupDynamicBuildingSiteInterop = function(building, site) {
-                    // setupPopup(building, site);
+                    setupPopup(building, site);
                 }
 
 
@@ -189,51 +200,46 @@
 						var marker = L.marker(site.latlng, {
 							icon: config.markerIcon,
 						});
-                        if (! marker) { console.log("NOT MARKER!", site); }
 						$scope.siteLayer.addLayer(marker);
 						site.marker = marker;
 						marker.site = site;
 					}
-
-					// TODO: define function once, use `this`
-					site.marker.on('click', function(e) {
-						_activeSite = site;
-						$scope.withDynamicBuilding(site, function(building) {
-                            config.onSiteClick(building, site);
-                        });
-					});
 				};
 
-                var popup = L.popup({
-                    autoPan: false,
-                    minWidth: 400,
-                    maxWidth: 400,
-                    closeButton: false,
-                });
+                var _markerClick = function(e) {
+                    var site = e.target.site;
+                    $scope.withDynamicBuilding(site, function(building) {
+                        config.onSiteClick(building, site);
+                    });
+                };
 
-                var _movePopup = function(e) {
-                    console.log(e);
-                    popup.setLatLng(e.latlng);
-                }
-
+                var bindSiteEvents = function(site) {
+                    site.marker.on('click', _markerClick);
+                };
 
 				/**
-				 *
+				 * set up all relationships between building and site
+				 * (if possible)
+				 * @param  {building} building
+				 * @param  {site} site
+				 * Open the created popup immediately
 				 */
 				var setupPopup = function(building, site) {
-                    if (popup.site) {
-                        popup.site.marker.off('move remove');
-                    }
-					popup.setContent(
-                        makePopupHTML(config.popupHTML(building))
-                    );
-					popup.site = site;
-					popup.marker = site.marker; // this is apparently the only way to access the popup's marker
-                    site.marker
-                        .on('move', _movePopup);
-                        // .on('remove', $scope.map.closePopup);
-
-					return popup;
+					if(!site.marker.getPopup()) {
+						var popup = L.popup({
+							autoPan: false,
+							minWidth: 400,
+							maxWidth: 400,
+							closeButton: false,
+						}).setContent(
+                            makePopupHTML(config.popupHTML(building))
+                        );
+						popup.site = site;
+						popup.marker = site.marker; // this is apparently the only way to access the popup's marker
+                        site.marker.bindPopup(popup, {
+                            openOnClick: false,
+                        });
+					}
 				};
 
 				var _removeWatches = function() {
@@ -274,33 +280,35 @@
 					$scope.updateBuildings();
 				});
 
+                /**
+                 * Open the marker's popup only after making sure the building
+                 * data is loaded
+                 */
                 var openPopup = function(site) {
-                    site.isPopupLoading = true;
                     $scope.withDynamicBuilding(site, function(building) {
-                        var popup = setupPopup(building, site);
-                        popup.setLatLng(site.latlng).openOn($scope.map);
-                        site.isPopupLoading = false;
-                        site.isPopupOpen = true;
+                        site.marker.openPopup();
                     });
                 };
 
                 var closePopup = function() {
-                    popup.site.isPopupOpen = false;
-                    $scope.map.closePopup(popup);
+                    $scope.map.closePopup();
                 };
 
-                var togglePopup = _.debounce(function(site) {
-                    if (site.isPopupLoading) {
-                        return;
-                    }
-                    console.log(site);
-                    if (!site.isPopupOpen) {
-                        openPopup(site);
-                    } else {
-                        closePopup();
-                    }
-                }, 50);
+                /**
+                 * Custom toggle popup. You would think we could use
+                 * Leaflet.marker.togglePopup() but we CAN'T!
+                 * @param  {[type]} site [description]
+                 * @return {[type]}      [description]
+                 */
+                var togglePopup = function(site) {
+                    if (site.popupIsOpen) closePopup();
+                    else openPopup(site);
+                };
 
+                /**
+                 * update building's highlight state based on
+                 * config.buildingHightlight callback
+                 */
                 $scope.updateBuildingHighlight = function(building) {
                     var site = $scope.getSite(building);
                     var highlight = config.buildingHighlight(building, site);
@@ -342,17 +350,26 @@
 					}
 
 					for (i in newSites) {
-						siteData = newSites[i];
+                        siteData = newSites[i];
 
-						if(!siteData.latitude) {
-							// if the site wasn't geocoded, don't even bother
-							// TODO: in the future, the backend response shouldn't
-							// even include non-geocoded sites
-							continue;
-						}
+                        // an unfortunate hack.
+                        var wasAlreadyLoaded = $scope.sites[siteData.canonical_building_id];
 
+                        if(!siteData.latitude) {
+                            // if the site wasn't geocoded, don't even bother
+                            // TODO: in the future, the backend response shouldn't
+                            // even include non-geocoded sites
+                            continue;
+                        }
+
+                        // order is very important here...
 						site = loadSite(siteData);
+                        // ...setupSite needs to happen every time...
 						setupSite(site);
+                        if (!wasAlreadyLoaded) {
+                            // ...but bindSiteEvents should only happen once per site.
+                            bindSiteEvents(site);
+                        }
 					}
 
 					for (i in currentMarkers) {
@@ -365,9 +382,9 @@
 					for (i in $scope.buildings) {
 						building = $scope.buildings[i];
 						site = $scope.getSite(building);
-						// if(site) {
-						// 	setupPopup(building, site, i);
-						// } // else, the building was not geocoded
+						if(site) {
+							setupDynamicBuildingSiteInterop(building, site);
+						} // else, the building was not geocoded
 					}
 
 					setupStaticBuildingSiteInterop();

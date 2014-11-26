@@ -90,7 +90,7 @@
 
 						scope.map = map;
 
-						var siteLayer = scope.siteLayer = new L.MarkerClusterGroup({
+						scope.siteLayer = new L.MarkerClusterGroup({
 							spiderfyDistanceMultiplier: 2,
 							maxClusterRadius: function(zoom) {
 								if (zoom <= 15) return 60;
@@ -99,10 +99,10 @@
 							},
 						});
 
-						map.addLayer(siteLayer);
+						map.addLayer(scope.siteLayer);
 
 						scope.controlLayer = L.control.layers([], {
-							'Buildings': siteLayer,
+							'Buildings': scope.siteLayer,
 						}).addTo(map);
 
 

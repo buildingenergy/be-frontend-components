@@ -19,7 +19,8 @@
     "mapbox.js": "~2.1.1",
     "lodash": "~2.4.1",
     "angular": "~1.2.26",
-    "Leaflet.markercluster": "git@github.com:Leaflet/Leaflet.markercluster.git#ac0b77b16f5fc858b1a3f8117d79eb15d337898c",
-    "leaflet": "~0.7.3"
+    "Leaflet.markercluster": "git@github.com:Leaflet/Leaflet.markercluster.git#a1e06288d988d92192219c1f2768ef9230b49c96",
+    "leaflet": "~0.7.3",
+    "leaflet-fork": "git@github.com:maackle/Leaflet.git#popup-option-openOnClick-dist"
   }
 }
