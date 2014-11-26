@@ -62,7 +62,6 @@
 
 						var _activeSite = null;
 
-
 						/**
 						 * Determine if this marker is independent, or absorbed
 						 * into a cluster
@@ -109,7 +108,6 @@
 						/************************
 						** MAP EVENT LISTENERS **
 						************************/
-
 
 						map.on('load', function(e) {
 							setMapBounds(map, scope.siteLayer);
