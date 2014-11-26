@@ -1,13 +1,15 @@
+/*jshint multistr: true */
+
 (function(angular) {
 
     var makePopupHTML = function(content) {
-        return ' \
+        return (' \
         <div class="map_pop_up_container bottom center"> \
           <div class="arrow"></div> \
           <div class="map_pop_up_inner"> \
               ' + content + ' \
           </div> \
-        </div>';
+        </div>');
     };
 
 	angular.module('BE.frontend.buildingMap')
@@ -17,7 +19,7 @@
 			function($scope, geo) {
 
 				var noop = function() {};
-				$scope.config = $scope.getConfig() || {}
+				$scope.config = $scope.getConfig() || {};
                 var config = $scope.config = _.defaults($scope.config, {
                     markerIconActive: $scope.config.markerIcon,
 					onSiteClick: function(building) {},
@@ -125,7 +127,11 @@
                         }
                         callback(data.building, cached);
                     });
-                }
+                };
+
+                $scope.sitePopupIsOpen = function(site) {
+                	return $scope.map.hasLayer(site.marker.getPopup());
+                };
 
                 /**
                  * Stuff that needs to happen after all buildings and sites
@@ -133,7 +139,7 @@
                  */
                 var setupStaticBuildingSiteInterop = function() {
                     setupBuildingWatches();
-                }
+                };
 
                 /**
                  * Stuff that needs to happen when a building is dynamically
@@ -142,7 +148,7 @@
                  */
                 var setupDynamicBuildingSiteInterop = function(building, site) {
                     setupPopup(building, site);
-                }
+                };
 
 
 				/**
@@ -164,6 +170,7 @@
 						$scope.siteLayer.addLayer(marker);
 						site.marker = marker;
 						marker.site = site;
+						bindSiteEvents(site);
 					}
 				};
 
@@ -186,21 +193,19 @@
 				 * Open the created popup immediately
 				 */
 				var setupPopup = function(building, site) {
-					if(!site.marker.getPopup()) {
-						var popup = L.popup({
-							autoPan: false,
-							minWidth: 400,
-							maxWidth: 400,
-							closeButton: false,
-						}).setContent(
-                            makePopupHTML(config.popupHTML(building))
-                        );
-						popup.site = site;
-						popup.marker = site.marker; // this is apparently the only way to access the popup's marker
-                        site.marker.bindPopup(popup, {
-                            openOnClick: false,
-                        });
-					}
+					var popup = L.popup({
+						autoPan: false,
+						minWidth: 400,
+						maxWidth: 400,
+						closeButton: false,
+					}).setContent(
+                        makePopupHTML(config.popupHTML(building))
+                    );
+					popup.site = site;
+					popup.marker = site.marker; // this is apparently the only way to access the popup's marker
+                    site.marker.bindPopup(popup, {
+                        openOnClick: false,
+                    });
 				};
 
 				var _removeWatches = function() {
@@ -208,6 +213,12 @@
 						function(cb) { cb(); }
 					);
 					_buildingWatches = [];
+				};
+
+				var _buildingChange = function(building) {
+					var site = $scope.getSite(building);
+					config.onBuildingChange(building, site);
+                    $scope.updateBuildingHighlight(building);
 				};
 
 				/**
@@ -222,15 +233,11 @@
 						building = $scope.buildings[index];
 						site = $scope.getSite(building);
 						if(site) {
-							var watch = $scope.$watch('buildings['+index+']', function(building) {
-								var site = $scope.getSite(building);
-								config.onBuildingChange(building, site);
-                                $scope.updateBuildingHighlight(building);
-							}, true);
+							var watch = $scope.$watch('buildings['+index+']', _buildingChange, true);
 							_buildingWatches.push(watch);
 						} // else, the building was not geocoded
 					}
-				}
+				};
 
                 /**
                  * Just watches the buildings object for changes
@@ -246,7 +253,12 @@
                  * data is loaded
                  */
                 var openPopup = function(site) {
+                	console.log("OPEN 1");
                     $scope.withDynamicBuilding(site, function(building) {
+                		console.log("OPEN 2", building, site, site.marker.getPopup());
+                		if(!site.marker.getPopup()) {
+                			setupPopup(building, site);
+                		}
                         site.marker.openPopup();
                     });
                 };
@@ -262,7 +274,8 @@
                  * @return {[type]}      [description]
                  */
                 var togglePopup = function(site) {
-                    if (site.popupIsOpen) closePopup();
+                	console.log('TOGLOG', $scope.sitePopupIsOpen(site));
+                    if ($scope.sitePopupIsOpen(site)) closePopup();
                     else openPopup(site);
                 };
 
@@ -280,13 +293,14 @@
                         site.marker.setIcon(config.markerIcon);
                         site.marker.setZIndexOffset(0);
                     }
-                }
+                };
 
 				config.loadAPI({
                     'openPopup': openPopup,
                     'closePopup': closePopup,
                     'togglePopup': togglePopup,
 					'getSite': $scope.getSite,
+					'sitePopupIsOpen': $scope.sitePopupIsOpen,
                     'updateBuildingHighlight': $scope.updateBuildingHighlight,
                     'withDynamicBuilding': $scope.withDynamicBuilding,
                     'centerOnMap': function(site) {
@@ -327,10 +341,10 @@
 						site = loadSite(siteData);
                         // ...setupSite needs to happen every time...
 						setupSite(site);
-                        if (!wasAlreadyLoaded) {
-                            // ...but bindSiteEvents should only happen once per site.
-                            bindSiteEvents(site);
-                        }
+                        // if (!wasAlreadyLoaded) {
+                        //     // ...but bindSiteEvents should only happen once per site.
+                        //     bindSiteEvents(site);
+                        // }
 					}
 
 					for (i in currentMarkers) {
