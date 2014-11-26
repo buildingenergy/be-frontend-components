@@ -47,8 +47,6 @@
 					scope: {
 						buildings: '=buildings',
 						getSites: '&buildingSites',
-						getDynamicBuilding: '=getDynamicBuilding',
-						mapboxId: '@',
 						getConfig: '&config',
 						tileset: '@',
 						initialCenter: '&',
@@ -132,6 +130,17 @@
 						    $(e.popup._container).find('.close_it').one('click', function(e) {
 						        map.closePopup();
 						    });
+						    e.popup.site.popupIsOpen = true;
+							scope.withDynamicBuilding(e.popup.site, function(building) {
+								scope.updateBuildingHighlight(building);
+							});
+						});
+
+						map.on('popupclose', function(e) {
+							e.popup.site.popupIsOpen = false;
+							scope.withDynamicBuilding(e.popup.site, function(building) {
+								scope.updateBuildingHighlight(building);
+							});
 						});
 
 						if(scope.initialCenter() && scope.initialZoom()) {

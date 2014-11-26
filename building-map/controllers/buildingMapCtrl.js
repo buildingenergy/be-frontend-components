@@ -56,8 +56,9 @@
 			function($scope, geo) {
 
 				var noop = function() {};
-				var config = $scope.config = _.defaults($scope.getConfig() || {}, {
-					markerIcon: null,
+				$scope.config = $scope.getConfig() || {}
+                var config = $scope.config = _.defaults($scope.config, {
+                    markerIconActive: $scope.config.markerIcon,
 					onSiteClick: function(building) {},
 					popupHTML: function(building) {
 						return "" + building.address_line_1;
@@ -137,7 +138,7 @@
 					return map;
 				};
 
-                var withDynamicBuilding = function(site, callback) {
+                $scope.withDynamicBuilding = function(site, callback) {
                     var promise = geo.get_building_snapshot(site.canonical_building_id);
                     promise.then(function(data) {
                         // we don't actually care about data.cached since we're checking caching ourselves
@@ -166,12 +167,9 @@
                  * Stuff that needs to happen when a building is dynamically
                  * loaded wrt. a site (e.g. when a site is clicked for a building
                  * that doesn't show in the table)
-                 *
-                 * Ideally these functions should be idempotent so we don't have
-                 * to check if they've already been called.
                  */
                 var setupDynamicBuildingSiteInterop = function(building, site) {
-                    setupPopup(building, site);
+                    // setupPopup(building, site);
                 }
 
 
@@ -191,6 +189,7 @@
 						var marker = L.marker(site.latlng, {
 							icon: config.markerIcon,
 						});
+                        if (! marker) { console.log("NOT MARKER!", site); }
 						$scope.siteLayer.addLayer(marker);
 						site.marker = marker;
 						marker.site = site;
@@ -199,33 +198,42 @@
 					// TODO: define function once, use `this`
 					site.marker.on('click', function(e) {
 						_activeSite = site;
-						withDynamicBuilding(site, function(building) {
+						$scope.withDynamicBuilding(site, function(building) {
                             config.onSiteClick(building, site);
                         });
 					});
 				};
 
+                var popup = L.popup({
+                    autoPan: false,
+                    minWidth: 400,
+                    maxWidth: 400,
+                    closeButton: false,
+                });
+
+                var _movePopup = function(e) {
+                    console.log(e);
+                    popup.setLatLng(e.latlng);
+                }
+
+
 				/**
-				 * set up all relationships between building and site
-				 * (if possible)
-				 * @param  {building} building
-				 * @param  {site} site
-				 * Open the created popup immediately
+				 *
 				 */
 				var setupPopup = function(building, site) {
-					if(!site.marker.getPopup()) {
-						var popup = L.popup({
-							autoPan: false,
-							minWidth: 400,
-							maxWidth: 400,
-							closeButton: false,
-						}).setContent(
-                            makePopupHTML(config.popupHTML(building))
-                        );
-						popup.site = site;
-						popup.marker = site.marker; // this is apparently the only way to access the popup's marker
-						site.marker.bindPopup(popup, {});
-					}
+                    if (popup.site) {
+                        popup.site.marker.off('move remove');
+                    }
+					popup.setContent(
+                        makePopupHTML(config.popupHTML(building))
+                    );
+					popup.site = site;
+					popup.marker = site.marker; // this is apparently the only way to access the popup's marker
+                    site.marker
+                        .on('move', _movePopup);
+                        // .on('remove', $scope.map.closePopup);
+
+					return popup;
 				};
 
 				var _removeWatches = function() {
@@ -236,7 +244,7 @@
 				};
 
 				/**
-				 * set up watches for building changes and tear down old ones
+				 * Sets up watches for building changes and tear down old ones
 				 * must be invoked after sites are set up
 				 * watches are only set for buildings with sites associated,
 				 * which should be a small number due to pagination (< 100)
@@ -250,38 +258,68 @@
 							var watch = $scope.$watch('buildings['+index+']', function(building) {
 								var site = $scope.getSite(building);
 								config.onBuildingChange(building, site);
+                                $scope.updateBuildingHighlight(building);
 							}, true);
 							_buildingWatches.push(watch);
 						} // else, the building was not geocoded
 					}
 				}
 
+                /**
+                 * Just watches the buildings object for changes
+                 * This catches the search_service building refresh, which
+                 * swaps out the entire object
+                 */
 				$scope.$watch('buildings', function() {
 					$scope.updateBuildings();
 				});
 
                 var openPopup = function(site) {
-                    withDynamicBuilding(site, function(building) {
-                        site.marker.openPopup();
+                    site.isPopupLoading = true;
+                    $scope.withDynamicBuilding(site, function(building) {
+                        var popup = setupPopup(building, site);
+                        popup.setLatLng(site.latlng).openOn($scope.map);
+                        site.isPopupLoading = false;
+                        site.isPopupOpen = true;
                     });
                 };
 
                 var closePopup = function() {
-                    map.closePopup();
+                    popup.site.isPopupOpen = false;
+                    $scope.map.closePopup(popup);
                 };
 
-                var togglePopup = function(site) {
-                    withDynamicBuilding(site, function(building) {
-                        site.marker.togglePopup();
-                    });
-                };
+                var togglePopup = _.debounce(function(site) {
+                    if (site.isPopupLoading) {
+                        return;
+                    }
+                    console.log(site);
+                    if (!site.isPopupOpen) {
+                        openPopup(site);
+                    } else {
+                        closePopup();
+                    }
+                }, 50);
+
+                $scope.updateBuildingHighlight = function(building) {
+                    var site = $scope.getSite(building);
+                    var highlight = config.buildingHighlight(building, site);
+                    if(highlight) {
+                        site.marker.setIcon(config.markerIconActive);
+                        site.marker.setZIndexOffset(250);
+                    } else {
+                        site.marker.setIcon(config.markerIcon);
+                        site.marker.setZIndexOffset(0);
+                    }
+                }
 
 				config.loadAPI({
                     'openPopup': openPopup,
                     'closePopup': closePopup,
                     'togglePopup': togglePopup,
 					'getSite': $scope.getSite,
-                    'withDynamicBuilding': withDynamicBuilding,
+                    'updateBuildingHighlight': $scope.updateBuildingHighlight,
+                    'withDynamicBuilding': $scope.withDynamicBuilding,
                     'centerOnMap': function(site) {
                         $scope.map.setView(site.latlng, Math.max(17, $scope.map.getZoom()));
                     }
@@ -327,13 +365,12 @@
 					for (i in $scope.buildings) {
 						building = $scope.buildings[i];
 						site = $scope.getSite(building);
-						if(site) {
-							setupPopup(building, site, i);
-						} // else, the building was not geocoded
+						// if(site) {
+						// 	setupPopup(building, site, i);
+						// } // else, the building was not geocoded
 					}
 
 					setupStaticBuildingSiteInterop();
-
 				};
 			}
 		]);
