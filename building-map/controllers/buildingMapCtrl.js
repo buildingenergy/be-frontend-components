@@ -147,9 +147,12 @@
                  * that doesn't show in the table)
                  */
                 var setupDynamicBuildingSiteInterop = function(building, site) {
-                    setupPopup(building, site);
+
                 };
 
+                var bindSiteEvents = function(site) {
+                    site.marker.on('click', _markerClick);
+                };
 
 				/**
 				 * set various properties on the site object
@@ -163,14 +166,18 @@
 						lng: parseFloat(site.longitude),
 					};
 
-					if(!(site.marker && $scope.siteLayer.hasLayer(site.marker))) {
+					if (! site.marker) {
 						var marker = L.marker(site.latlng, {
 							icon: config.markerIcon,
 						});
-						$scope.siteLayer.addLayer(marker);
 						site.marker = marker;
 						marker.site = site;
 						bindSiteEvents(site);
+					}
+
+
+					if (! $scope.siteLayer.hasLayer(site.marker)) {
+						$scope.siteLayer.addLayer(site.marker);
 					}
 				};
 
@@ -179,10 +186,6 @@
                     $scope.withDynamicBuilding(site, function(building) {
                         config.onSiteClick(building, site);
                     });
-                };
-
-                var bindSiteEvents = function(site) {
-                    site.marker.on('click', _markerClick);
                 };
 
 				/**
@@ -253,9 +256,7 @@
                  * data is loaded
                  */
                 var openPopup = function(site) {
-                	console.log("OPEN 1");
                     $scope.withDynamicBuilding(site, function(building) {
-                		console.log("OPEN 2", building, site, site.marker.getPopup());
                 		if(!site.marker.getPopup()) {
                 			setupPopup(building, site);
                 		}
