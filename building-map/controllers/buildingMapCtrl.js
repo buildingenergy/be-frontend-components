@@ -292,19 +292,6 @@
                     }
                 };
 
-				config.loadAPI({
-                    'openPopup': openPopup,
-                    'closePopup': closePopup,
-                    'togglePopup': togglePopup,
-					'getSite': $scope.getSite,
-					'sitePopupIsOpen': $scope.sitePopupIsOpen,
-                    'updateBuildingHighlight': $scope.updateBuildingHighlight,
-                    'withDynamicBuilding': $scope.withDynamicBuilding,
-                    'centerOnMap': function(site) {
-                        $scope.map.setView(site.latlng, Math.max(17, $scope.map.getZoom()));
-                    }
-				});
-
 				$scope.updateBuildings = function() {
 					var i;
 					var newSites = $scope.getSites();
@@ -357,6 +344,21 @@
 
 					setupStaticBuildingSiteInterop();
 				};
+
+				config.loadAPI({
+                    'openPopup': openPopup,
+                    'closePopup': closePopup,
+                    'togglePopup': togglePopup,
+					'getSite': $scope.getSite,
+					'sitePopupIsOpen': $scope.sitePopupIsOpen,
+					'updateBuildings': $scope.updateBuildings,
+                    'updateBuildingHighlight': $scope.updateBuildingHighlight,
+                    'withDynamicBuilding': $scope.withDynamicBuilding,
+                    'centerOnMap': function(site) {
+                        $scope.map.setView(site.latlng, Math.max(17, $scope.map.getZoom()));
+                    }
+				});
+
 			}
 		]);
 })(angular);
