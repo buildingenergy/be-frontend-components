@@ -12,94 +12,94 @@
         </div>');
     };
 
-	angular.module('BE.frontend.buildingMap')
-		.controller('BuildingMapController', [
-			'$scope',
-			'geo_service',
-			function($scope, geo) {
+    angular.module('BE.frontend.buildingMap')
+        .controller('BuildingMapController', [
+            '$scope',
+            'geo_service',
+            function($scope, geo) {
 
-				var noop = function() {};
-				$scope.config = $scope.getConfig() || {};
+                var noop = function() {};
+                $scope.config = $scope.getConfig() || {};
                 var config = $scope.config = _.defaults($scope.config, {
                     markerIconActive: $scope.config.markerIcon,
-					onSiteClick: function(building) {},
-					popupHTML: function(building) {
-						return "" + building.address_line_1;
-					},
-					onViewportChange: noop,
-					onBuildingChange: noop,
-					loadAPI: {},
-				});
+                    onSiteClick: function(building) {},
+                    popupHTML: function(building) {
+                        return "" + building.address_line_1;
+                    },
+                    onViewportChange: noop,
+                    onBuildingChange: noop,
+                    loadAPI: {},
+                });
 
-				var _buildingWatches = [];
-				var _buildingIndices = {};
+                var _buildingWatches = [];
+                var _buildingIndices = {};
                 var _dynamicBuildings = {};  // mainly used to check if a building has been dynamically loaded yet
-				$scope.sites = {};
+                $scope.sites = {};
 
-				var loadBuilding = function(index, building) {
-					_buildingIndices[building.canonical_building] = index;
-					geo.cache_building(building);
-				};
+                var loadBuilding = function(index, building) {
+                    _buildingIndices[building.canonical_building] = index;
+                    geo.cache_building(building);
+                };
 
-				var loadSite = function(siteData) {
-					var bid = siteData.canonical_building_id;
-					if(!$scope.sites[bid]) {
-						$scope.sites[bid] = siteData;
-					}
-					return $scope.sites[bid];
-				};
+                var loadSite = function(siteData) {
+                    var bid = siteData.canonical_building_id;
+                    if(!$scope.sites[bid]) {
+                        $scope.sites[bid] = siteData;
+                    }
+                    return $scope.sites[bid];
+                };
 
-				/**
-				 * get site corresponding to a building
-				 * @param  {building} building
-				 * @return {site or null}
-				 */
-				$scope.getSite = function(building) {
-					return $scope.sites[building.canonical_building];
-				};
+                /**
+                 * get site corresponding to a building
+                 * @param  {building} building
+                 * @return {site or null}
+                 */
+                $scope.getSite = function(building) {
+                    return $scope.sites[building.canonical_building];
+                };
 
-				/**
-				 * get the building corresponding to a site
-				 * @param  {site} site
-				 * @return {building or null}
-				 */
-				$scope.getBuilding = function(site) {
-					return $scope.buildings[_buildingIndices[site.canonical_building_id]];
-				};
+                /**
+                 * get the building corresponding to a site
+                 * @param  {site} site
+                 * @return {building or null}
+                 */
+                $scope.getBuilding = function(site) {
+                    return $scope.buildings[_buildingIndices[site.canonical_building_id]];
+                };
 
 
-				$scope.createMap = function(element) {
-					var map;
-					var mapOptions = {
-						minZoom: 3,
-					};
+                $scope.createMap = function(element) {
+                    var map;
+                    var mapOptions = {
+                        minZoom: 3,
+                    };
 
-					if ($scope.tileset == 'mapquest-osm') {
-						map = L.map(element, mapOptions);
-						map.addLayer(
-							L.tileLayer('http://otile{s}.mqcdn.com/tiles/1.0.0/map/{z}/{x}/{y}.jpeg', {
-								attribution: 'Tiles by <a href="http://www.mapquest.com/">MapQuest</a> &mdash; Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
-								subdomains: '1234',
-								maxZoom: 18,  // Leaflet default
-							})
-						);
-					} else if ($scope.tileset == 'mapbox') {
-						if (!L.mapbox) {
-							console.error("No mapbox.js found!");
-						} else if (!L.mapbox.accessToken) {
-							console.error("Must supply L.mapbox.accessToken");
-						}
-						map = L.mapbox.map(element, $scope.mapboxId);
-						defaultMarkerIcon = L.mapbox.marker.icon({
-							'marker-size': 'small',
-							'marker-color': '#AA60D6',
-						});
-					} else {
-						console.error("Unknown map tileset: " + $scope.tileset);
-					}
+                    if ($scope.tileset == 'mapquest-osm') {
+                        map = L.map(element, mapOptions);
+                        map.addLayer(
+                            L.tileLayer('http://otile{s}.mqcdn.com/tiles/1.0.0/map/{z}/{x}/{y}.jpeg', {
+                                attribution: 'Tiles by <a href="http://www.mapquest.com/">MapQuest</a> &mdash; Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
+                                subdomains: '1234',
+                                maxZoom: 18,  // Leaflet default
+                            })
+                        );
+                    } else if ($scope.tileset == 'mapbox') {
+                        if (!L.mapbox) {
+                            console.error("No mapbox.js found!");
+                        } else if (!L.mapbox.accessToken) {
+                            console.error("Must supply L.mapbox.accessToken");
+                        }
+                        map = L.mapbox.map(element, $scope.mapboxId);
+                        defaultMarkerIcon = L.mapbox.marker.icon({
+                            'marker-size': 'small',
+                            'marker-color': '#AA60D6',
+                        });
+                    } else {
+                        console.error("Unknown map tileset: " + $scope.tileset);
+                    }
 
-					return map;
-				};
+                    return map;
+                };
 
                 /**
                  * Very important function to asynchronously fetch and load building info
@@ -130,7 +130,7 @@
                 };
 
                 $scope.sitePopupIsOpen = function(site) {
-                	return $scope.map.hasLayer(site.marker.getPopup());
+                    return $scope.map.hasLayer(site.marker.getPopup());
                 };
 
                 /**
@@ -147,7 +147,7 @@
                  * that doesn't show in the table)
                  */
                 var setupDynamicBuildingSiteInterop = function(building, site) {
-                	// currently nothing special needs to happen...
+                    // currently nothing special needs to happen...
                 };
 
                 var _markerClick = function(e) {
@@ -157,96 +157,96 @@
                     });
                 };
 
-				/**
-				 * Set various properties on the site object
-				 * after loading. Gets called often, and shouldn't
-				 * involve building data.
-				 *
-				 * @param  {site} site
-				 */
-				var setupSite = function(site) {
+                /**
+                 * Set various properties on the site object
+                 * after loading. Gets called often, and shouldn't
+                 * involve building data.
+                 *
+                 * @param  {site} site
+                 */
+                var setupSite = function(site) {
 
-					site.latlng = {
-						lat: parseFloat(site.latitude),
-						lng: parseFloat(site.longitude),
-					};
+                    site.latlng = {
+                        lat: parseFloat(site.latitude),
+                        lng: parseFloat(site.longitude),
+                    };
 
-					if (! site.marker) {
-						var marker = L.marker(site.latlng, {
-							icon: config.markerIcon,
-						});
-						marker.site = site;
-						site.marker = marker;
-                    	site.marker.on('click', _markerClick);
-					}
+                    if (! site.marker) {
+                        var marker = L.marker(site.latlng, {
+                            icon: config.markerIcon,
+                        });
+                        marker.site = site;
+                        site.marker = marker;
+                        site.marker.on('click', _markerClick);
+                    }
 
-					if (! $scope.siteLayer.hasLayer(site.marker)) {
-						$scope.siteLayer.addLayer(site.marker);
-					}
-				};
+                    if (! $scope.siteLayer.hasLayer(site.marker)) {
+                        $scope.siteLayer.addLayer(site.marker);
+                    }
+                };
 
-				/**
-				 * set up all relationships between building and site
-				 * (if possible)
-				 * @param  {building} building
-				 * @param  {site} site
-				 * Open the created popup immediately
-				 */
-				var setupPopup = function(building, site) {
-					var popup = L.popup({
-						autoPan: false,
-						minWidth: 400,
-						maxWidth: 400,
-						closeButton: false,
-					}).setContent(
+                /**
+                 * set up all relationships between building and site
+                 * (if possible)
+                 * @param  {building} building
+                 * @param  {site} site
+                 * Open the created popup immediately
+                 */
+                var setupPopup = function(building, site) {
+                    var popup = L.popup({
+                        autoPan: false,
+                        minWidth: 400,
+                        maxWidth: 400,
+                        closeButton: false,
+                    }).setContent(
                         makePopupHTML(config.popupHTML(building))
                     );
-					popup.site = site;
-					popup.marker = site.marker; // this is apparently the only way to access the popup's marker
+                    popup.site = site;
+                    popup.marker = site.marker; // this is apparently the only way to access the popup's marker
                     site.marker.bindPopup(popup, {
                         openOnClick: false,
                     });
-				};
+                };
 
-				var _removeWatches = function() {
-					_buildingWatches.forEach(
-						function(cb) { cb(); }
-					);
-					_buildingWatches = [];
-				};
+                var _removeWatches = function() {
+                    _buildingWatches.forEach(
+                        function(cb) { cb(); }
+                    );
+                    _buildingWatches = [];
+                };
 
-				var _buildingChange = function(building) {
-					var site = $scope.getSite(building);
-					config.onBuildingChange(building, site);
+                var _buildingChange = function(building) {
+                    var site = $scope.getSite(building);
+                    config.onBuildingChange(building, site);
                     $scope.updateBuildingHighlight(building);
-				};
+                };
 
-				/**
-				 * Sets up watches for building changes and tear down old ones
-				 * must be invoked after sites are set up
-				 * watches are only set for buildings with sites associated,
-				 * which should be a small number due to pagination (< 100)
-				 */
-				var setupBuildingWatches = function() {
-					_removeWatches();
-					for (var index in $scope.buildings) {
-						building = $scope.buildings[index];
-						site = $scope.getSite(building);
-						if(site) {
-							var watch = $scope.$watch('buildings['+index+']', _buildingChange, true);
-							_buildingWatches.push(watch);
-						} // else, the building was not geocoded
-					}
-				};
+                /**
+                 * Sets up watches for building changes and tear down old ones
+                 * must be invoked after sites are set up
+                 * watches are only set for buildings with sites associated,
+                 * which should be a small number due to pagination (< 100)
+                 */
+                var setupBuildingWatches = function() {
+                    _removeWatches();
+                    for (var index in $scope.buildings) {
+                        building = $scope.buildings[index];
+                        site = $scope.getSite(building);
+                        if(site) {
+                            var watch = $scope.$watch('buildings['+index+']', _buildingChange, true);
+                            _buildingWatches.push(watch);
+                        } // else, the building was not geocoded
+                    }
+                };
 
                 /**
                  * Just watches the buildings object for changes
                  * This catches the search_service building refresh, which
                  * swaps out the entire object
                  */
-				$scope.$watch('buildings', function() {
-					$scope.updateBuildings();
-				});
+                $scope.$watch('buildings', function() {
+                    $scope.updateBuildings();
+                });
 
                 /**
                  * Open the marker's popup only after making sure the building
@@ -254,9 +254,9 @@
                  */
                 var openPopup = function(site) {
                     $scope.withDynamicBuilding(site, function(building) {
-                		if(!site.marker.getPopup()) {
-                			setupPopup(building, site);
-                		}
+                        if(!site.marker.getPopup()) {
+                            setupPopup(building, site);
+                        }
                         site.marker.openPopup();
                     });
                 };
@@ -292,23 +292,23 @@
                     }
                 };
 
-				$scope.updateBuildings = function() {
-					var i;
-					var newSites = $scope.getSites();
-					var newSiteMap = {};
-					var currentMarkers = $scope.siteLayer.getLayers();
-					var building, site, siteData;
+                $scope.updateBuildings = function() {
+                    var i;
+                    var newSites = $scope.getSites();
+                    var newSiteMap = {};
+                    var currentMarkers = $scope.siteLayer.getLayers();
+                    var building, site, siteData;
 
-					for (i in newSites) {
-						newSiteMap[newSites[i].canonical_building_id] = newSites[i];
-					}
+                    for (i in newSites) {
+                        newSiteMap[newSites[i].canonical_building_id] = newSites[i];
+                    }
 
-					for (i in $scope.buildings) {
-						building = $scope.buildings[i];
-						loadBuilding(i, building);
-					}
+                    for (i in $scope.buildings) {
+                        building = $scope.buildings[i];
+                        loadBuilding(i, building);
+                    }
 
-					for (i in newSites) {
+                    for (i in newSites) {
                         siteData = newSites[i];
 
                         if(!siteData.latitude) {
@@ -321,44 +321,44 @@
                         // loadSite will return an existing site object.
                         // This prevents sites from being destroyed and re-created
                         // every time the map moves.
-						site = loadSite(siteData);
+                        site = loadSite(siteData);
 
                         // setupSite needs to happen every time
-						setupSite(site);
-					}
+                        setupSite(site);
+                    }
 
-					for (i in currentMarkers) {
-						var marker = currentMarkers[i];
-						if (!(marker.site.canonical_building_id in newSiteMap)) {
-							$scope.siteLayer.removeLayer(marker);
-						}
-					}
+                    for (i in currentMarkers) {
+                        var marker = currentMarkers[i];
+                        if (!(marker.site.canonical_building_id in newSiteMap)) {
+                            $scope.siteLayer.removeLayer(marker);
+                        }
+                    }
 
-					for (i in $scope.buildings) {
-						building = $scope.buildings[i];
-						site = $scope.getSite(building);
-						if(site) {
-							setupDynamicBuildingSiteInterop(building, site);
-						} // else, the building was not geocoded
-					}
+                    for (i in $scope.buildings) {
+                        building = $scope.buildings[i];
+                        site = $scope.getSite(building);
+                        if(site) {
+                            setupDynamicBuildingSiteInterop(building, site);
+                        } // else, the building was not geocoded
+                    }
 
-					setupStaticBuildingSiteInterop();
-				};
+                    setupStaticBuildingSiteInterop();
+                };
 
-				config.loadAPI({
+                config.loadAPI({
                     'openPopup': openPopup,
                     'closePopup': closePopup,
                     'togglePopup': togglePopup,
-					'getSite': $scope.getSite,
-					'sitePopupIsOpen': $scope.sitePopupIsOpen,
-					'updateBuildings': $scope.updateBuildings,
+                    'getSite': $scope.getSite,
+                    'sitePopupIsOpen': $scope.sitePopupIsOpen,
+                    'updateBuildings': $scope.updateBuildings,
                     'updateBuildingHighlight': $scope.updateBuildingHighlight,
                     'withDynamicBuilding': $scope.withDynamicBuilding,
                     'centerOnMap': function(site) {
                         $scope.map.setView(site.latlng, Math.max(17, $scope.map.getZoom()));
                     }
-				});
+                });
 
-			}
-		]);
+            }
+        ]);
 })(angular);
