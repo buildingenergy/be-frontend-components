@@ -23,6 +23,8 @@
                 var config = $scope.config = _.defaults($scope.config, {
                     markerIconActive: $scope.config.markerIcon,
                     onSiteClick: function(building) {},
+                    onSiteMouseOver: function(building) {},
+                    onSiteMouseOut: function(building) {},
                     popupHTML: function(building) {
                         return "" + building.address_line_1;
                     },
@@ -125,7 +127,7 @@
                         } else {
                             cached = true;
                         }
-                        callback(data.building, cached);
+                        callback(_dynamicBuildings[site.canonical_building_id], cached);
                     });
                 };
 
@@ -154,6 +156,23 @@
                     var site = e.target.site;
                     $scope.withDynamicBuilding(site, function(building) {
                         config.onSiteClick(building, site);
+                        $scope.updateBuildingHighlight(building);
+                    });
+                };
+
+                var _markerMouseOver = function(e) {
+                    var site = e.target.site;
+                    $scope.withDynamicBuilding(site, function(building) {
+                        config.onSiteMouseOver(building, site);
+                        $scope.updateBuildingHighlight(building);
+                    });
+                };
+
+                var _markerMouseOut = function(e) {
+                    var site = e.target.site;
+                    $scope.withDynamicBuilding(site, function(building) {
+                        config.onSiteMouseOut(building, site);
+                        $scope.updateBuildingHighlight(building);
                     });
                 };
 
@@ -170,7 +189,6 @@
                         lat: parseFloat(site.latitude),
                         lng: parseFloat(site.longitude),
                     };
-
                     if (! site.marker) {
                         var marker = L.marker(site.latlng, {
                             icon: config.markerIcon,
@@ -178,6 +196,8 @@
                         marker.site = site;
                         site.marker = marker;
                         site.marker.on('click', _markerClick);
+                        site.marker.on('mouseover', _markerMouseOver);
+                        site.marker.on('mouseout', _markerMouseOut);
                     }
 
                     if (! $scope.siteLayer.hasLayer(site.marker)) {
@@ -218,7 +238,7 @@
                 var _buildingChange = function(building) {
                     var site = $scope.getSite(building);
                     config.onBuildingChange(building, site);
-                    $scope.updateBuildingHighlight(building);
+                    $scope.updateBuildingHighlight(building, site);
                 };
 
                 /**
@@ -340,6 +360,7 @@
                         if(site) {
                             setupDynamicBuildingSiteInterop(building, site);
                         } // else, the building was not geocoded
+                        $scope.updateBuildingHighlight(building);
                     }
 
                     setupStaticBuildingSiteInterop();
