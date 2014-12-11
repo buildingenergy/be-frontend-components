@@ -83,12 +83,12 @@
                         initialZoom: '&',
                     },
                     controller: 'BuildingMapController',
-                    link: function(scope, element, attrs) {
+                    link: function($scope, element, attrs) {
 
-                        var config = scope.config;
+                        var config = $scope.config;
 
                         var defaultMarkerIcon = null;
-                        var map = scope.createMap(element[0]);
+                        var map = $scope.createMap(element[0]);
 
                         var _activeSite = null;
 
@@ -117,9 +117,9 @@
                             }
                         }, 300);
 
-                        scope.map = map;
+                        $scope.map = map;
 
-                        scope.siteLayer = new L.MarkerClusterGroup({
+                        $scope.siteLayer = new L.MarkerClusterGroup({
                             spiderfyDistanceMultiplier: 2,
                             maxClusterRadius: function(zoom) {
                                 if (zoom <= 15) return 60;
@@ -128,10 +128,10 @@
                             },
                         });
 
-                        map.addLayer(scope.siteLayer);
+                        map.addLayer($scope.siteLayer);
 
-                        scope.controlLayer = L.control.layers([], {
-                            'Buildings': scope.siteLayer,
+                        $scope.controlLayer = L.control.layers([], {
+                            'Buildings': $scope.siteLayer,
                         }).addTo(map);
 
 
@@ -140,7 +140,7 @@
                         ************************/
 
                         map.on('load', function(e) {
-                            setMapBounds(map, scope.siteLayer);
+                            setMapBounds(map, $scope.siteLayer);
 
                             // debounce, and throw away the first invocation
                             map.on('zoomend dragend resize', _.debounce(_.after(2, function(e) {
@@ -149,7 +149,7 @@
                                 config.onViewportChange(map);
                             }, 100)));
                             if (config.initialize) {
-                                config.initialize(map, scope.controlLayer);
+                                config.initialize(map, $scope.controlLayer);
                             }
                         });
 
@@ -159,29 +159,63 @@
                                 map.closePopup();
                             });
                             e.popup.site.popupIsOpen = true;
-                            scope.withDynamicBuilding(e.popup.site, function(building) {
-                                scope.updateBuildingHighlight(building);
+                            $scope.withDynamicBuilding(e.popup.site, function(building) {
+                                $scope.updateBuildingHighlight(building);
                             });
                         });
 
                         map.on('popupclose', function(e) {
                             e.popup.site.popupIsOpen = false;
-                            scope.withDynamicBuilding(e.popup.site, function(building) {
-                                scope.updateBuildingHighlight(building);
+                            $scope.withDynamicBuilding(e.popup.site, function(building) {
+                                $scope.updateBuildingHighlight(building);
                             });
                         });
 
-                        if(scope.initialCenter() && scope.initialZoom()) {
-                            map.setView(scope.initialCenter(), scope.initialZoom());
+                        if($scope.initialCenter() && $scope.initialZoom()) {
+                            map.setView($scope.initialCenter(), $scope.initialZoom());
                         } else {
-                            setMapBounds(map, scope.siteLayer);
+                            setMapBounds(map, $scope.siteLayer);
                         }
 
-                        // scope.siteLayer.on('animationend', function(e) {
-                        //  if(!_activeSite || !isIndependent(_activeSite.marker)) {
-                        //      map.closePopup();
-                        //  }
-                        // });
+                        var _markerHighlighted = function(marker) {
+                            return marker.site._highlighted;
+                        }
+
+                        var _leaflet_id = function(cluster) {
+                            return cluster._leaflet_id;
+                        }
+
+                        var updateClusterHighlight = function() {
+                            var zoom = $scope.map.getZoom();
+                            var clusters = [];
+                            var markers = $scope.siteLayer.getLayers();
+
+                            for (m in markers) {
+                                var marker = markers[m];
+                                var site = marker.site;
+                                if (site._highlighted) {
+                                    clusters.push(marker.__parent);
+                                }
+                            }
+                            clusters = _.uniq(clusters, _leaflet_id);
+                            for (c in clusters) {
+                                var cluster = clusters[c];
+                                while (cluster.__parent && cluster._zoom >= zoom) {
+                                    if (cluster._icon) {
+                                        $(cluster._icon).addClass('marker-cluster-highlighted');
+                                    }
+                                    cluster = cluster.__parent;
+                                }
+                            }
+
+                        }
+
+                        $scope.siteLayer.on('animationend', function(e) {
+                            updateClusterHighlight();
+                            // if(!_activeSite || !isIndependent(_activeSite.marker)) {
+                            //     map.closePopup();
+                            // }
+                        });
 
                     },
                 };

@@ -315,9 +315,11 @@
                     if(highlight) {
                         site.marker.setIcon(config.markerIconActive);
                         site.marker.setZIndexOffset(250);
+                        site._highlighted = true;
                     } else {
                         site.marker.setIcon(config.markerIcon);
                         site.marker.setZIndexOffset(0);
+                        site._highlighted = false;
                     }
                 };
 
@@ -358,12 +360,13 @@
                         setupSite(site);
                     }
 
-                    for (i in currentMarkers) {
-                        var marker = currentMarkers[i];
-                        if (!(marker.site.canonical_building_id in newSiteMap)) {
-                            $scope.siteLayer.removeLayer(marker);
-                        }
-                    }
+                    // NOTE: I think we don't need this...it's a needless optimization that just breaks things
+                    // for (i in currentMarkers) {
+                    //     var marker = currentMarkers[i];
+                    //     if (!(marker.site.canonical_building_id in newSiteMap)) {
+                    //         $scope.siteLayer.removeLayer(marker);
+                    //     }
+                    // }
 
                     for (i in $scope.buildings) {
                         building = $scope.buildings[i];
