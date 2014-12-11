@@ -131,6 +131,15 @@
                     });
                 };
 
+                var refreshDynamicBuildings = function() {
+                    for (i in $scope.buildings) {
+                        var building = $scope.buildings[i];
+                        if (_dynamicBuildings[building.canonical_building]) {
+                            $scope.buildings[i] = _dynamicBuildings[building.canonical_building];
+                        }
+                    }
+                }
+
                 $scope.sitePopupIsOpen = function(site) {
                     return $scope.map.hasLayer(site.marker.getPopup());
                 };
@@ -319,6 +328,8 @@
                     var currentMarkers = $scope.siteLayer.getLayers();
                     var building, site, siteData;
 
+                    refreshDynamicBuildings();
+
                     for (i in newSites) {
                         newSiteMap[newSites[i].canonical_building_id] = newSites[i];
                     }
@@ -360,7 +371,6 @@
                         if(site) {
                             setupDynamicBuildingSiteInterop(building, site);
                         } // else, the building was not geocoded
-                        $scope.updateBuildingHighlight(building);
                     }
 
                     setupStaticBuildingSiteInterop();
