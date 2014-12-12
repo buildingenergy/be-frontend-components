@@ -308,16 +308,19 @@
                 /**
                  * update building's highlight state based on
                  * config.buildingHightlight callback
+                 * This should be very idempotent, it gets called a lot
                  */
                 $scope.updateBuildingHighlight = function(building) {
                     var site = $scope.getSite(building);
                     var highlight = config.buildingHighlight(building, site);
-                    if(highlight) {
-                        site.marker.setIcon(config.markerIconActive);
-                        site.marker.setZIndexOffset(250);
-                    } else {
-                        site.marker.setIcon(config.markerIcon);
-                        site.marker.setZIndexOffset(0);
+                    if (site && site.marker) {
+                        if(highlight) {
+                            site.marker.setIcon(config.markerIconActive);
+                            site.marker.setZIndexOffset(250);
+                        } else {
+                            site.marker.setIcon(config.markerIcon);
+                            site.marker.setZIndexOffset(0);
+                        }
                     }
                 };
 
