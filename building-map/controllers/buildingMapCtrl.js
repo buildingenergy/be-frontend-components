@@ -39,12 +39,12 @@
                 $scope.sites = {};
 
                 var loadBuilding = function(index, building) {
-                    _buildingIndices[building.canonical_building] = index;
+                    _buildingIndices[building.id] = index;
                     geo.cache_building(building);
                 };
 
                 var loadSite = function(siteData) {
-                    var bid = siteData.canonical_building_id;
+                    var bid = siteData.building_snapshot_id;
                     if(!$scope.sites[bid]) {
                         $scope.sites[bid] = siteData;
                     }
@@ -57,7 +57,7 @@
                  * @return {site or null}
                  */
                 $scope.getSite = function(building) {
-                    return $scope.sites[building.canonical_building];
+                    return $scope.sites[building.id];
                 };
 
                 /**
@@ -66,7 +66,7 @@
                  * @return {building or null}
                  */
                 $scope.getBuilding = function(site) {
-                    return $scope.buildings[_buildingIndices[site.canonical_building_id]];
+                    return $scope.buildings[_buildingIndices[site.building_snapshot_id]];
                 };
 
 
@@ -118,24 +118,26 @@
                  */
                 $scope.withDynamicBuilding = function(site, callback) {
                     var promise = geo.get_building_snapshot(site.canonical_building_id);
+                    // console.log(_dynamicBuildings, site);
                     promise.then(function(data) {
+                        console.log('dattt', data);
                         // we don't actually care about data.cached since we're checking caching ourselves
                         var cached = data.cached;
-                        if (! _dynamicBuildings[site.canonical_building_id]) {
-                            _dynamicBuildings[site.canonical_building_id] = data.building;
+                        if (! _dynamicBuildings[site.building_snapshot_id]) {
+                            _dynamicBuildings[site.building_snapshot_id] = data.building;
                             setupDynamicBuildingSiteInterop(data.building, site);
                         } else {
                             cached = true;
                         }
-                        callback(_dynamicBuildings[site.canonical_building_id], cached);
+                        callback(_dynamicBuildings[site.building_snapshot_id], cached);
                     });
                 };
 
                 var refreshDynamicBuildings = function() {
                     for (i in $scope.buildings) {
                         var building = $scope.buildings[i];
-                        if (_dynamicBuildings[building.canonical_building]) {
-                            $scope.buildings[i] = _dynamicBuildings[building.canonical_building];
+                        if (_dynamicBuildings[building.id]) {
+                            $scope.buildings[i] = _dynamicBuildings[building.id];
                         }
                     }
                 }
@@ -326,6 +328,13 @@
                     }
                 };
 
+                $scope.updateAllBuildingsHighlight = function(building) {
+                    for (i in $scope.buildings) {
+                        var building = $scope.buildings[i];
+                        $scope.updateBuildingHighlight(building);
+                    }
+                };
+
                 $scope.updateBuildings = function() {
                     var i;
                     var newSites = $scope.getSites();
@@ -333,10 +342,10 @@
                     var currentMarkers = $scope.siteLayer.getLayers();
                     var building, site, siteData;
 
-                    refreshDynamicBuildings();
+                    // refreshDynamicBuildings();
 
                     for (i in newSites) {
-                        newSiteMap[newSites[i].canonical_building_id] = newSites[i];
+                        newSiteMap[newSites[i].building_snapshot_id] = newSites[i];
                     }
 
                     for (i in $scope.buildings) {
@@ -366,7 +375,7 @@
                     // NOTE: I think we don't need this...it's a needless optimization that just breaks things
                     // for (i in currentMarkers) {
                     //     var marker = currentMarkers[i];
-                    //     if (!(marker.site.canonical_building_id in newSiteMap)) {
+                    //     if (!(marker.site.building_snapshot_id in newSiteMap)) {
                     //         $scope.siteLayer.removeLayer(marker);
                     //     }
                     // }
@@ -390,6 +399,7 @@
                     'sitePopupIsOpen': $scope.sitePopupIsOpen,
                     'updateBuildings': $scope.updateBuildings,
                     'updateBuildingHighlight': $scope.updateBuildingHighlight,
+                    'updateAllBuildingsHighlight': $scope.updateAllBuildingsHighlight,
                     'withDynamicBuilding': $scope.withDynamicBuilding,
                     'centerOnMap': function(site) {
                         $scope.map.setView(site.latlng, Math.max(17, $scope.map.getZoom()));
