@@ -364,12 +364,14 @@
                     }
 
                     // NOTE: I think we don't need this...it's a needless optimization that just breaks things
-                    // for (i in currentMarkers) {
-                    //     var marker = currentMarkers[i];
-                    //     if (!(marker.site.canonical_building_id in newSiteMap)) {
-                    //         $scope.siteLayer.removeLayer(marker);
-                    //     }
-                    // }
+                    if ($scope.config.clearSites !== false) {
+                        for (i in currentMarkers) {
+                            var marker = currentMarkers[i];
+                            if (!(marker.site.canonical_building_id in newSiteMap)) {
+                                $scope.siteLayer.removeLayer(marker);
+                            }
+                        }
+                    }
 
                     for (i in $scope.buildings) {
                         building = $scope.buildings[i];
