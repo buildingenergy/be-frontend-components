@@ -393,8 +393,8 @@
                     'updateBuildings': $scope.updateBuildings,
                     'updateBuildingHighlight': $scope.updateBuildingHighlight,
                     'withDynamicBuilding': $scope.withDynamicBuilding,
-                    'centerOnMap': function(site) {
-                        $scope.map.setView(site.latlng, Math.max(17, $scope.map.getZoom()));
+                    'centerOnMap': function(site, callback) {
+                        $scope.siteLayer.zoomToShowLayer(site.marker, callback);
                     }
                 });
 
