@@ -281,12 +281,15 @@
                  * Open the marker's popup only after making sure the building
                  * data is loaded
                  */
-                var openPopup = function(site) {
+                var openPopup = function(site, callback) {
                     $scope.withDynamicBuilding(site, function(building) {
                         if(!site.marker.getPopup()) {
                             setupPopup(building, site);
                         }
-                        site.marker.openPopup();
+                        var popup = site.marker.openPopup();
+                        if ('function' === typeof(callback)) {
+                            callback(popup);
+                        }
                     });
                 };
 
