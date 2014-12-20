@@ -117,20 +117,25 @@
                  *                              loaded or not
                  */
                 $scope.withDynamicBuilding = function(site, callback) {
-                    var promise = geo.get_building_snapshot(site.canonical_building_id);
-                    // console.log(_dynamicBuildings, site);
-                    promise.then(function(data) {
-                        console.log('dattt', data);
-                        // we don't actually care about data.cached since we're checking caching ourselves
-                        var cached = data.cached;
-                        if (! _dynamicBuildings[site.building_snapshot_id]) {
-                            _dynamicBuildings[site.building_snapshot_id] = data.building;
-                            setupDynamicBuildingSiteInterop(data.building, site);
-                        } else {
-                            cached = true;
-                        }
-                        callback(_dynamicBuildings[site.building_snapshot_id], cached);
-                    });
+                    var building = $scope.buildings[site.building_snapshot_id];
+                    if (building) {
+                        callback(building, true);
+                    } else {
+                        var promise = geo.get_building_snapshot(site.canonical_building_id);
+                        // console.log(_dynamicBuildings, site);
+                        promise.then(function(data) {
+                            console.log('dattt', data);
+                            // we don't actually care about data.cached since we're checking caching ourselves
+                            var cached = data.cached;
+                            if (! _dynamicBuildings[site.building_snapshot_id]) {
+                                _dynamicBuildings[site.building_snapshot_id] = data.building;
+                                setupDynamicBuildingSiteInterop(data.building, site);
+                            } else {
+                                cached = true;
+                            }
+                            callback(_dynamicBuildings[site.building_snapshot_id], cached);
+                        });
+                    }
                 };
 
                 var refreshDynamicBuildings = function() {
