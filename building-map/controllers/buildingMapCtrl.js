@@ -283,12 +283,15 @@
                  * Open the marker's popup only after making sure the building
                  * data is loaded
                  */
-                var openPopup = function(site) {
+                var openPopup = function(site, callback) {
                     $scope.withDynamicBuilding(site, function(building) {
                         if(!site.marker.getPopup()) {
                             setupPopup(building, site);
                         }
-                        site.marker.openPopup();
+                        var popup = site.marker.openPopup();
+                        if ('function' === typeof(callback)) {
+                            callback(popup);
+                        }
                     });
                 };
 
@@ -372,13 +375,15 @@
                         setupSite(site);
                     }
 
-                    // NOTE: I think we don't need this...it's a needless optimization that just breaks things
-                    // for (i in currentMarkers) {
-                    //     var marker = currentMarkers[i];
-                    //     if (!(marker.site.building_snapshot_id in newSiteMap)) {
-                    //         $scope.siteLayer.removeLayer(marker);
-                    //     }
-                    // }
+
+                    if ($scope.config.clearSites !== false) {
+                        for (i in currentMarkers) {
+                            var marker = currentMarkers[i];
+                            if (!(marker.site.canonical_building_id in newSiteMap)) {
+                                $scope.siteLayer.removeLayer(marker);
+                            }
+                        }
+                    }
 
                     for (i in $scope.buildings) {
                         building = $scope.buildings[i];
@@ -401,8 +406,8 @@
                     'updateBuildingHighlight': $scope.updateBuildingHighlight,
                     'updateAllBuildingsHighlight': $scope.updateAllBuildingsHighlight,
                     'withDynamicBuilding': $scope.withDynamicBuilding,
-                    'centerOnMap': function(site) {
-                        $scope.map.setView(site.latlng, Math.max(17, $scope.map.getZoom()));
+                    'centerOnMap': function(site, callback) {
+                        $scope.siteLayer.zoomToShowLayer(site.marker, callback);
                     }
                 });
 
