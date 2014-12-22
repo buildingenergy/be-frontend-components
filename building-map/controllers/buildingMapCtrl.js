@@ -40,6 +40,7 @@
 
                 var loadBuilding = function(index, building) {
                     _buildingIndices[building.id] = index;
+                    _dynamicBuildings[building.id] = building;
                     geo.cache_building(building);
                 };
 
@@ -383,7 +384,7 @@
                     if ($scope.config.clearSites !== false) {
                         for (i in currentMarkers) {
                             var marker = currentMarkers[i];
-                            if (!(marker.site.canonical_building_id in newSiteMap)) {
+                            if (!(marker.site.building_snapshot_id in newSiteMap)) {
                                 $scope.siteLayer.removeLayer(marker);
                             }
                         }
