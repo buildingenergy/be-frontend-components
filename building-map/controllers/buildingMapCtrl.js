@@ -174,6 +174,7 @@
                     $scope.withDynamicBuilding(site, function(building) {
                         config.onSiteClick(building, site);
                         $scope.updateBuildingHighlight(building);
+                        _applyBuildingChange(building, site);
                     });
                 };
 
@@ -182,6 +183,7 @@
                     $scope.withDynamicBuilding(site, function(building) {
                         config.onSiteMouseOver(building, site);
                         $scope.updateBuildingHighlight(building);
+                        _applyBuildingChange(building, site);
                     });
                 };
 
@@ -190,6 +192,7 @@
                     $scope.withDynamicBuilding(site, function(building) {
                         config.onSiteMouseOut(building, site);
                         $scope.updateBuildingHighlight(building);
+                        _applyBuildingChange(building, site);
                     });
                 };
 
@@ -252,8 +255,21 @@
                     _buildingWatches = [];
                 };
 
-                var _buildingChange = function(building) {
-                    var site = $scope.getSite(building);
+                /**
+                 * Just wraps _buildingChange in an $apply
+                 */
+                var _applyBuildingChange = function (building) {
+                    $scope.$apply(function() { _buildingChange(building); });
+                }
+
+                /**
+                 * Gets called during angular watches and various other places,
+                 * helps keep sites and building state in sync
+                 */
+                var _buildingChange = function (building, site) {
+                    if (! site) {
+                        site = $scope.getSite(building);
+                    }
                     config.onBuildingChange(building, site);
                     $scope.updateBuildingHighlight(building, site);
                 };
@@ -351,7 +367,7 @@
                     var currentMarkers = $scope.siteLayer.getLayers();
                     var building, site, siteData;
 
-                    // refreshDynamicBuildings();
+                    refreshDynamicBuildings();
 
                     for (i in newSites) {
                         newSiteMap[newSites[i].building_snapshot_id] = newSites[i];
