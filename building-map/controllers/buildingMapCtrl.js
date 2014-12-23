@@ -125,7 +125,6 @@
                         var promise = geo.get_building_snapshot(site.canonical_building_id);
                         // console.log(_dynamicBuildings, site);
                         promise.then(function(data) {
-                            console.log('dattt', data);
                             // we don't actually care about data.cached since we're checking caching ourselves
                             var cached = data.cached;
                             if (! _dynamicBuildings[site.building_snapshot_id]) {
@@ -223,6 +222,8 @@
                     if (! $scope.siteLayer.hasLayer(site.marker)) {
                         $scope.siteLayer.addLayer(site.marker);
                     }
+
+                    return site;
                 };
 
                 /**
@@ -258,9 +259,9 @@
                 /**
                  * Just wraps _buildingChange in an $apply
                  */
-                var _applyBuildingChange = function (building) {
+                var _applyBuildingChange = _.debounce(function (building) {
                     $scope.$apply(function() { _buildingChange(building); });
-                }
+                }, 100);
 
                 /**
                  * Gets called during angular watches and various other places,
@@ -340,7 +341,8 @@
                 $scope.updateBuildingHighlight = function(building) {
                     var site = $scope.getSite(building);
                     var highlight = config.buildingHighlight(building, site);
-                    if (site && site.marker) {
+
+                    if (site && site.marker && site.marker._map) {
                         if(highlight) {
                             site.marker.setIcon(config.markerIconActive);
                             site.marker.setZIndexOffset(250);
@@ -360,11 +362,22 @@
                     }
                 };
 
+                $scope.pruneMarkers = function() {
+                    var currentMarkers = $scope.siteLayer.getLayers();
+                    for (i in currentMarkers) {
+                        var marker = currentMarkers[i];
+                        if (!(marker.site && _.contains(_.pluck($scope.getSites(), 'building_snapshot_id'), marker.site.building_snapshot_id))) {
+                            console.log('pruning:', marker);
+                            console.log(marker.site.building_snapshot_id, _.pluck($scope.getSites(), 'building_snapshot_id'));
+                            $scope.siteLayer.removeLayer(marker);
+                        }
+                    }
+                }
+
                 $scope.updateBuildings = function() {
                     var i;
                     var newSites = $scope.getSites();
                     var newSiteMap = {};
-                    var currentMarkers = $scope.siteLayer.getLayers();
                     var building, site, siteData;
 
                     refreshDynamicBuildings();
@@ -397,15 +410,6 @@
                         setupSite(site);
                     }
 
-                    if ($scope.config.clearSites !== false) {
-                        for (i in currentMarkers) {
-                            var marker = currentMarkers[i];
-                            if (!(marker.site.building_snapshot_id in newSiteMap)) {
-                                $scope.siteLayer.removeLayer(marker);
-                            }
-                        }
-                    }
-
                     for (i in $scope.buildings) {
                         building = $scope.buildings[i];
                         site = $scope.getSite(building);
@@ -421,15 +425,18 @@
                     'openPopup': openPopup,
                     'closePopup': closePopup,
                     'togglePopup': togglePopup,
+                    'getBuilding': $scope.getBuilding, // TODO: remove
                     'getSite': $scope.getSite,
                     'sitePopupIsOpen': $scope.sitePopupIsOpen,
+                    'updateBuilding': _buildingChange,
                     'updateBuildings': $scope.updateBuildings,
                     'updateBuildingHighlight': $scope.updateBuildingHighlight,
                     'updateAllBuildingsHighlight': $scope.updateAllBuildingsHighlight,
                     'withDynamicBuilding': $scope.withDynamicBuilding,
                     'centerOnMap': function(site, callback) {
                         $scope.siteLayer.zoomToShowLayer(site.marker, callback);
-                    }
+                    },
+                    'pruneMarkers': $scope.pruneMarkers
                 });
 
             }
