@@ -272,7 +272,6 @@
                         site = $scope.getSite(building);
                     }
                     config.onBuildingChange(building, site);
-                    $scope.updateBuildingHighlight(building, site);
                 };
 
                 /**

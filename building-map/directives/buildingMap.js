@@ -159,16 +159,10 @@
                                 map.closePopup();
                             });
                             e.popup.site.popupIsOpen = true;
-                            $scope.withDynamicBuilding(e.popup.site, function(building) {
-                                $scope.updateBuildingHighlight(building);
-                            });
                         });
 
                         map.on('popupclose', function(e) {
                             e.popup.site.popupIsOpen = false;
-                            $scope.withDynamicBuilding(e.popup.site, function(building) {
-                                $scope.updateBuildingHighlight(building);
-                            });
                         });
 
                         if($scope.initialCenter() && $scope.initialZoom()) {
@@ -212,6 +206,8 @@
 
                         $scope.siteLayer.on('animationend', function(e) {
                             updateClusterHighlight();
+                            $scope.updateAllBuildingsHighlight();
+                            //
                             // if(!_activeSite || !isIndependent(_activeSite.marker)) {
                             //     map.closePopup();
                             // }
