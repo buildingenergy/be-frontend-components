@@ -324,8 +324,6 @@
                 /**
                  * Custom toggle popup. You would think we could use
                  * Leaflet.marker.togglePopup() but we CAN'T!
-                 * @param  {[type]} site [description]
-                 * @return {[type]}      [description]
                  */
                 var togglePopup = function(site) {
                     if ($scope.sitePopupIsOpen(site)) closePopup();
@@ -337,8 +335,16 @@
                  * config.buildingHightlight callback
                  * This should be very idempotent, it gets called a lot
                  */
-                $scope.updateBuildingHighlight = function(building) {
-                    var site = $scope.getSite(building);
+
+                /**
+                 * update building's highlight state based on
+                 * config.buildingHightlight callback
+                 * This should be very idempotent, it gets called a lot
+                 * @param  {object} building The building to update
+                 * @param  {object} site     (optional) the associated site, if this is not provided it will be fetched
+                 */
+                $scope.updateBuildingHighlight = function(building, site) {
+                    site = site || $scope.getSite(building);
                     var highlight = config.buildingHighlight(building, site);
 
                     if (site && site.marker && site.marker._map) {
