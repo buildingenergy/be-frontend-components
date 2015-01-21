@@ -341,12 +341,12 @@
                  * config.buildingHightlight callback
                  * This should be very idempotent, it gets called a lot
                  * @param  {object} building The building to update
-                 * @param  {object} site     (optional) the associated site, if this is not provided it will be fetched
                  */
-                $scope.updateBuildingHighlight = function(building, site) {
-                    site = site || $scope.getSite(building);
+                $scope.updateBuildingHighlight = function(building) {
+                    site = $scope.getSite(building);
                     var highlight = config.buildingHighlight(building, site);
 
+                    console.log(building, site);
                     if (site && site.marker && site.marker._map) {
                         if(highlight) {
                             site.marker.setIcon(config.markerIconActive);
