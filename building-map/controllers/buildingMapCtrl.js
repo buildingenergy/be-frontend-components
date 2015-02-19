@@ -346,7 +346,6 @@
                     site = $scope.getSite(building);
                     var highlight = config.buildingHighlight(building, site);
 
-                    console.log(building, site);
                     if (site && site.marker && site.marker._map) {
                         if(highlight) {
                             site.marker.setIcon(config.markerIconActive);
