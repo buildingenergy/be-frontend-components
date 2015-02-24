@@ -1,0 +1,18 @@
+{
+  "name": "be-frontend-components",
+  "version": "0.0.0",
+  "repository": "https://github.com/buildingenergy/be-frontend-components",
+  "dependencies": {},
+  "description": "Buidling Energy's frontend components",
+  "main": "",
+  "license": "Building Energy, Inc.",
+  "homepage": "https://github.com/buildingenergy/be-frontend-components",
+  "devDependencies": {
+    "gulp": "~3.2.4",
+    "gulp-less": "~1.1.1",
+    "gulp-jshint": "^1.9.2"
+  },
+  "engines": {
+    "node": ">=0.8.0"
+  }
+}
