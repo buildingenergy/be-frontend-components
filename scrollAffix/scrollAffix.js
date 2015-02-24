@@ -4,6 +4,9 @@
  */
 (function (angular, _, $) {
 
+  /**
+   * like bootstrap affix, adds class `fixie` to pin elements
+   */
   angular.module('scrollAffix', [])
   .directive('scrollAffix', function () {
     return {
