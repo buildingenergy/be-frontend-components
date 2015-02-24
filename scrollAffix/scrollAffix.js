@@ -19,6 +19,7 @@
    *      </div>
    *  </div>
    */
+  var a
   angular.module('scrollAffix', [])
   .directive('scrollAffix', function () {
     return {
