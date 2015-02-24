@@ -1,0 +1,44 @@
+.section_nav_container {
+    &.fixie {
+        position: fixed;
+        display: block;
+        width: 100%;
+        background: rgba(255,255,255,0.9);
+        z-index: 3;
+        top: 0;
+        margin-top: 0px;
+        padding: 27px 0 0 0;
+    }
+}
+
+.section {
+    &.has_rows {
+        > .row {
+            &.fixie {
+                position: fixed;
+                // display: block;
+                width: 23.8%;
+                // z-index: 3;
+                top: 53px;
+                right: 0;
+            }
+        }
+    }
+}
+
+.section_header_container {
+
+    .section_header {
+        h2 {
+            &.fixie {
+                position: fixed;
+                display: block;
+                // width: 100%;
+                background: transparent;
+                z-index: 3;
+                top: 26px;
+                margin-top: 0px;
+            }
+        }
+    }
+}
