@@ -2,7 +2,7 @@
  * :copyright: (c) 2015 Building Energy Inc
  * :license: see LICENSE for more details.
  */
-(function (angular, _, $) {
+(function (angular) {
 
   /**
    * like bootstrap affix, adds class `fixie` to pin elements when the
@@ -52,4 +52,4 @@
     };
   });
 
-})(window.angular, window._, window.$);
+})(window.angular);
