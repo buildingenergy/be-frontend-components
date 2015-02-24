@@ -1,0 +1,10 @@
+
+dependencies:
+    override:
+        - npm install -g gulp
+        - npm install
+test:
+
+    override:
+        - gulp test
+
