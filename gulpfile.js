@@ -11,7 +11,8 @@ var sources = [
 gulp.task('lint', function() {
   return gulp.src(sources)
     .pipe(jshint())
-    .pipe(jshint.reporter('default'));
+    .pipe(jshint.reporter('default'))
+    .pipe(jshint.reporter('fail'));
 });
 
 gulp.task('less', function () {
