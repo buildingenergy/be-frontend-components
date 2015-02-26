@@ -108,6 +108,9 @@ angular.module('tel', []).filter('tel', function () {
     };
 });
 
+(function(angular) {
+    angular.module('BE.frontend.buildingMap', []);
+})(angular);
 /*jshint multistr: true */
 
 (function(angular) {

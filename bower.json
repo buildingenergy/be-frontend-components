@@ -3,11 +3,11 @@
   "version": "0.0.0",
   "homepage": "https://github.com/buildingenergy/be-frontend-components",
   "authors": [
-    "Michael Dougherty <michael.dougherty@buildingenergy.com>"
+    "Michael Dougherty <michael.dougherty@buildingenergy.com>",
+    "Aleck Landgraf <aleck.landgraf@buildingenergy.com>"
   ],
-  "license": "MIT",
+  "license": "Building Energy Inc.",
   "private": true,
-  "main": null,
   "ignore": [
     "**/.*",
     "node_modules",
@@ -15,6 +15,7 @@
     "test",
     "tests"
   ],
+  "main": "build/js/be-frontend-components.js",
   "dependencies": {
     "mapbox.js": "~2.1.1",
     "lodash": "~2.4.1",

@@ -10,6 +10,7 @@ var sourcemaps = require('gulp-sourcemaps');
 var sources = [
   'scrollAffix/scrollAffix.js',
   'tel/tel.js',
+  'building-map/module.js',
   'building-map/controllers/buildingMapCtrl.js',
   'building-map/directives/buildingMap.js'
 ];
