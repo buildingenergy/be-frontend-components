@@ -19,10 +19,11 @@ Use in your project by adding the following to your `bower.json` dependencies:
 
 Then `bower install`
 
+### Develop
+
 ```console
 npm install -g gulp
 npm install
 gulp build
 gulp test
-gulp
 ```
