@@ -173,18 +173,18 @@
 
                         var _markerHighlighted = function(marker) {
                             return marker.site._highlighted;
-                        }
+                        };
 
                         var _leaflet_id = function(cluster) {
                             return cluster._leaflet_id;
-                        }
+                        };
 
                         var updateClusterHighlight = function() {
                             var zoom = $scope.map.getZoom();
                             var clusters = [];
                             var markers = $scope.siteLayer.getLayers();
 
-                            for (m in markers) {
+                            for (var m in markers) {
                                 var marker = markers[m];
                                 var site = marker.site;
                                 if (site._highlighted) {
@@ -192,7 +192,7 @@
                                 }
                             }
                             clusters = _.uniq(clusters, _leaflet_id);
-                            for (c in clusters) {
+                            for (var c in clusters) {
                                 var cluster = clusters[c];
                                 while (cluster.__parent && cluster._zoom >= zoom) {
                                     if (cluster._icon) {
@@ -202,7 +202,7 @@
                                 }
                             }
 
-                        }
+                        };
 
                         $scope.siteLayer.on('animationend', function(e) {
                             updateClusterHighlight();
