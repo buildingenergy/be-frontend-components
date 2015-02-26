@@ -5,6 +5,7 @@ var less = require('gulp-less');
 
 var sources = [
   'scrollAffix/scrollAffix.js',
+  'tel/tel.js'
 ];
 
 
