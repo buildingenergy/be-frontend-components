@@ -17,6 +17,10 @@ Use in your project by adding the following to your `bower.json` dependencies:
 }
 ```
 
+```html
+<script src="bower_components/be-frontend-components/build/js/be-frontend-components.min.js"></script>
+```
+
 Then `bower install`
 
 ### Develop
