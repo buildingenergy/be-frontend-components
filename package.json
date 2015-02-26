@@ -8,6 +8,7 @@
   "license": "Building Energy, Inc.",
   "homepage": "https://github.com/buildingenergy/be-frontend-components",
   "devDependencies": {
+    "del": "^1.1.1",
     "gulp": "^3.2.4",
     "gulp-concat": "^2.5.2",
     "gulp-jshint": "^1.9.2",

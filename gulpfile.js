@@ -1,5 +1,6 @@
 // sampled from https://github.com/oblador/angular-scroll/blob/master/gulpfile.js
 var gulp   = require('gulp');
+var del = require('del');
 var jshint = require('gulp-jshint');
 var less = require('gulp-less');
 var concat = require('gulp-concat');
@@ -15,7 +16,12 @@ var sources = [
   'building-map/directives/buildingMap.js'
 ];
 
-gulp.task('build', function () {
+gulp.task('clean', function (cb) {
+  del(['build'
+    ], cb);
+});
+
+gulp.task('compress', function () {
   // development version
   gulp.src(sources)
     .pipe(concat('be-frontend-components.js'))
@@ -46,4 +52,5 @@ gulp.task('less', function () {
 
 
 gulp.task('test', ['lint']);
+gulp.task('build', ['clean', 'compress']);
 gulp.task('default', ['test', 'less', 'build']);
