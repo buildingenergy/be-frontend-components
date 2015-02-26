@@ -3,6 +3,9 @@ var gulp   = require('gulp');
 var jshint = require('gulp-jshint');
 var less = require('gulp-less');
 var concat = require('gulp-concat');
+var uglify = require('gulp-uglify');
+var ngmin  = require('gulp-ng-annotate');
+var sourcemaps = require('gulp-sourcemaps');
 
 var sources = [
   'scrollAffix/scrollAffix.js',
@@ -12,8 +15,18 @@ var sources = [
 ];
 
 gulp.task('build', function () {
-  return gulp.src(sources)
+  // development version
+  gulp.src(sources)
     .pipe(concat('be-frontend-components.js'))
+    .pipe(gulp.dest('build/js'));
+
+  // minified version
+  gulp.src(sources)
+    .pipe(sourcemaps.init())
+      .pipe(concat('be-frontend-components.min.js'))
+      .pipe(ngmin())
+      .pipe(uglify())
+    .pipe(sourcemaps.write('./'))
     .pipe(gulp.dest('build/js'));
 });
 
