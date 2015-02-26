@@ -2,12 +2,20 @@
 var gulp   = require('gulp');
 var jshint = require('gulp-jshint');
 var less = require('gulp-less');
+var concat = require('gulp-concat');
 
 var sources = [
   'scrollAffix/scrollAffix.js',
-  'tel/tel.js'
+  'tel/tel.js',
+  'building-map/controllers/buildingMapCtrl.js',
+  'building-map/directives/buildingMap.js'
 ];
 
+gulp.task('build', function () {
+  return gulp.src(sources)
+    .pipe(concat('be-frontend-components.js'))
+    .pipe(gulp.dest('build/js'));
+});
 
 gulp.task('lint', function() {
   return gulp.src(sources)
@@ -24,4 +32,4 @@ gulp.task('less', function () {
 
 
 gulp.task('test', ['lint']);
-gulp.task('default', ['test', 'less']);
+gulp.task('default', ['test', 'less', 'build']);

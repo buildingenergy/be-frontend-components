@@ -9,8 +9,11 @@
   "homepage": "https://github.com/buildingenergy/be-frontend-components",
   "devDependencies": {
     "gulp": "^3.2.4",
+    "gulp-concat": "^2.5.2",
+    "gulp-jshint": "^1.9.2",
     "gulp-less": "~1.1.1",
-    "gulp-jshint": "^1.9.2"
+    "gulp-sourcemaps": "^1.4.0",
+    "gulp-uglify": "^1.1.0"
   },
   "engines": {
     "node": ">=0.8.0"
