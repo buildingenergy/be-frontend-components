@@ -370,9 +370,7 @@
                     var currentMarkers = $scope.siteLayer.getLayers();
                     for (var i in currentMarkers) {
                         var marker = currentMarkers[i];
-                        if (!(marker.site && _.contains(_.pluck($scope.getSites(), 'building_snapshot_id'), marker.site.building_snapshot_id))) {
-                            console.log('pruning:', marker);
-                            console.log(marker.site.building_snapshot_id, _.pluck($scope.getSites(), 'building_snapshot_id'));
+                        if (!(marker.site)) {
                             $scope.siteLayer.removeLayer(marker);
                         }
                     }
@@ -412,6 +410,13 @@
 
                         // setupSite needs to happen every time
                         setupSite(site);
+                    }
+
+                    // remove markers that don't match the search query
+                    for (bid in $scope.sites) {
+                        if (!newSiteMap[bid]) {
+                            $scope.siteLayer.removeLayer($scope.sites[bid].marker);
+                        }
                     }
 
                     for (i in $scope.buildings) {
