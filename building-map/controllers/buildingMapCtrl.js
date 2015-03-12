@@ -413,7 +413,7 @@
                     }
 
                     // remove markers that don't match the search query
-                    for (bid in $scope.sites) {
+                    for (var bid in $scope.sites) {
                         if (!newSiteMap[bid]) {
                             $scope.siteLayer.removeLayer($scope.sites[bid].marker);
                         }
