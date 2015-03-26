@@ -40,7 +40,7 @@
 
                 var loadBuilding = function(index, building) {
                     _buildingIndices[building.id] = index;
-                    _dynamicBuildings[building.id] = building;
+                    _.assign(_dynamicBuildings[building.id], building);
                     geo.cache_building(building);
                 };
 

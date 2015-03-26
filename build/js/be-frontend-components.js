@@ -153,7 +153,7 @@ angular.module('tel', []).filter('tel', function () {
 
                 var loadBuilding = function(index, building) {
                     _buildingIndices[building.id] = index;
-                    _dynamicBuildings[building.id] = building;
+                    _.assign(_dynamicBuildings[building.id], building);
                     geo.cache_building(building);
                 };
 
@@ -483,9 +483,7 @@ angular.module('tel', []).filter('tel', function () {
                     var currentMarkers = $scope.siteLayer.getLayers();
                     for (var i in currentMarkers) {
                         var marker = currentMarkers[i];
-                        if (!(marker.site && _.contains(_.pluck($scope.getSites(), 'building_snapshot_id'), marker.site.building_snapshot_id))) {
-                            console.log('pruning:', marker);
-                            console.log(marker.site.building_snapshot_id, _.pluck($scope.getSites(), 'building_snapshot_id'));
+                        if (!(marker.site)) {
                             $scope.siteLayer.removeLayer(marker);
                         }
                     }
@@ -525,6 +523,13 @@ angular.module('tel', []).filter('tel', function () {
 
                         // setupSite needs to happen every time
                         setupSite(site);
+                    }
+
+                    // remove markers that don't match the search query
+                    for (var bid in $scope.sites) {
+                        if (!newSiteMap[bid]) {
+                            $scope.siteLayer.removeLayer($scope.sites[bid].marker);
+                        }
                     }
 
                     for (i in $scope.buildings) {
@@ -705,11 +710,11 @@ angular.module('tel', []).filter('tel', function () {
                             setMapBounds(map, $scope.siteLayer);
 
                             // debounce, and throw away the first invocation
-                            map.on('zoomend dragend resize', _.debounce(_.after(2, function(e) {
+                            map.on('zoomend dragend resize', _.debounce(function(e) {
                                 // NOTE: DON'T use moveend,
                                 // because that fires when the map loads!
                                 config.onViewportChange(map);
-                            }, 100)));
+                            }, 100));
                             if (config.initialize) {
                                 config.initialize(map, $scope.controlLayer);
                             }
