@@ -18,7 +18,7 @@
   "main": "build/js/be-frontend-components.js",
   "dependencies": {
     "mapbox.js": "~2.1.1",
-    "lodash": "^3.3.1",
+    "lodash": "<4.0.0",
     "angular": "~1.2.26",
     "Leaflet.markercluster": "git@github.com:maackle/Leaflet.markercluster.git#leaflet-master",
     "leaflet": "~0.7.3",
