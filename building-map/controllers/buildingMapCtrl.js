@@ -80,7 +80,7 @@
                     if ($scope.tileset == 'mapquest-osm') {
                         map = L.map(element, mapOptions);
                         map.addLayer(
-                            L.tileLayer('http://otile{s}.mqcdn.com/tiles/1.0.0/map/{z}/{x}/{y}.jpeg', {
+                            L.tileLayer('https://otile{s}-s.mqcdn.com/tiles/1.0.0/map/{z}/{x}/{y}.jpeg', {
                                 attribution: 'Tiles by <a href="http://www.mapquest.com/">MapQuest</a> &mdash; Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
                                 subdomains: '1234',
                                 maxZoom: 18,  // Leaflet default
