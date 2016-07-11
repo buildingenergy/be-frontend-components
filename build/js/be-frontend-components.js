@@ -188,17 +188,32 @@ angular.module('tel', []).filter('tel', function () {
                     var map;
                     var mapOptions = {
                         minZoom: 3,
+                        zoom: 12,
                     };
+                    var tempOptions;
 
-                    if ($scope.tileset == 'mapquest-osm') {
-                        map = L.map(element, mapOptions);
-                        map.addLayer(
-                            L.tileLayer('https://otile{s}-s.mqcdn.com/tiles/1.0.0/map/{z}/{x}/{y}.jpeg', {
-                                attribution: 'Tiles by <a href="http://www.mapquest.com/">MapQuest</a> &mdash; Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
-                                subdomains: '1234',
-                                maxZoom: 17,  // Leaflet default
-                            })
-                        );
+                    if ($scope.tileset === 'mapquest-osm') {
+                        tempOptions = angular.copy(mapOptions);
+                        if (!MQ || !MQ.mapLayer) {
+                            console.error("MapQuest layer missing! Make sure the MapQuest Maps plugin for Leaflet with AppKey is present. https://developer.mapquest.com/documentation/leaflet-plugins/maps");
+                        }
+                        tempOptions.layers = MQ.mapLayer();
+                        map = L.map(element, tempOptions);
+                        // 7/11/2016 AKL - I normally remove commented code, but Michael D. has a fork of leaflet and a
+                        // fork of a leaflet plugin being used for something, check his commit log for details. I
+                        // cloned the two repos to BE today for reference. Today, MapQuest stopped allowing tiles
+                        // without an AppKey, so I had to update this code to use MapQuest's Leaflet plugin, which I
+                        // couldn't get working with the commented code below.
+                        //
+                        // BEGIN COMMENTED CODE
+                        // map.addLayer(
+                        //     L.tileLayer('https://otile{s}-s.mqcdn.com/tiles/1.0.0/map/{z}/{x}/{y}.jpeg', {
+                        //         attribution: 'Tiles by <a href="http://www.mapquest.com/">MapQuest</a> &mdash; Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
+                        //         subdomains: '1234',
+                        //         maxZoom: 17,  // Leaflet default
+                        //     })
+                        // );
+                        // END COMMENTED CODE
                     } else if ($scope.tileset == 'mapbox') {
                         if (!L.mapbox) {
                             console.error("No mapbox.js found!");
